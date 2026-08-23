@@ -1,3 +1,5 @@
+import type { ServiceIntegration } from '@/lib/integrations/types'
+
 export const SCHEMA_VERSION = 1
 
 export type SearchProvider = {
@@ -13,7 +15,7 @@ export type Service = {
   url: string
   logo: string
   tags: string[]
-  integration: null | { kind: string; apiKey: string }
+  integration: null | ServiceIntegration
 }
 
 export type WilabConfig = {

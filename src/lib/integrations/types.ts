@@ -5,9 +5,21 @@ export type GlanceResult = {
   text: string
 }
 
-export type ServiceIntegration = {
+export type ApiKeyIntegration = {
   kind: string
   apiKey: string
+}
+
+export type QnapIntegration = {
+  kind: 'qnap'
+  username: string
+  password: string
+}
+
+export type ServiceIntegration = ApiKeyIntegration | QnapIntegration
+
+export function isQnapIntegration(integration: ServiceIntegration): integration is QnapIntegration {
+  return integration.kind === 'qnap'
 }
 
 export type LiveResponse = {

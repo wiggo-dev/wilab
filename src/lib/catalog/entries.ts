@@ -97,7 +97,7 @@ const entries: CatalogEntry[] = [
     name: 'QNAP',
     defaultUrl: 'http://{host}:8080',
     logo: '',
-    integration: null,
+    integration: 'qnap',
   },
   {
     id: 'plex',

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react'
 import type { DisplayService } from '@/lib/config/types'
 import { parseTagsInput } from '@/lib/config/mutations'
+import { isQnapIntegration } from '@/lib/integrations/types'
 
 export function ServiceForm({
   service,
@@ -19,9 +20,25 @@ export function ServiceForm({
   const [url, setUrl] = useState(service.url)
   const [logo, setLogo] = useState(service.logo)
   const [tags, setTags] = useState(service.tags.join(', '))
-  const [apiKey, setApiKey] = useState(service.integration?.apiKey ?? '')
+  const [apiKey, setApiKey] = useState(
+    service.integration && !isQnapIntegration(service.integration) ? service.integration.apiKey : '',
+  )
+  const [username, setUsername] = useState(
+    service.integration && isQnapIntegration(service.integration) ? service.integration.username : '',
+  )
+  const [password, setPassword] = useState(
+    service.integration && isQnapIntegration(service.integration) ? service.integration.password : '',
+  )
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  function buildIntegration() {
+    if (!service.integration) return null
+    if (isQnapIntegration(service.integration)) {
+      return { kind: 'qnap' as const, username, password }
+    }
+    return { ...service.integration, apiKey }
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -30,12 +47,13 @@ export function ServiceForm({
       url,
       logo,
       tags: parseTagsInput(tags),
-      integration: service.integration ? { ...service.integration, apiKey } : null,
+      integration: buildIntegration(),
     })
   }
 
   async function onTestConnection() {
-    if (!service.integration) return
+    const integration = buildIntegration()
+    if (!integration) return
 
     setTesting(true)
     setTestResult(null)
@@ -44,10 +62,7 @@ export function ServiceForm({
       const response = await fetch('/api/integrations/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          integration: { ...service.integration, apiKey },
-        }),
+        body: JSON.stringify({ url, integration }),
       })
       const body = (await response.json()) as { ok: boolean; text?: string; error?: string }
 
@@ -100,36 +115,62 @@ export function ServiceForm({
           onChange={(event) => setTags(event.target.value)}
         />
       </label>
-      {service.integration && (
+      {service.integration && isQnapIntegration(service.integration) && (
         <>
           <label className="text-sm">
-            {service.integration.kind} API key
+            QNAP username
             <input
               className="mt-1 w-full rounded-lg bg-white/10 px-3 py-2"
-              value={apiKey}
-              onChange={(event) => setApiKey(event.target.value)}
-              placeholder="API key"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              autoComplete="username"
             />
           </label>
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              className="self-start rounded-lg border border-white/20 px-3 py-1.5 text-sm disabled:opacity-50"
-              disabled={testing || !url}
-              onClick={() => void onTestConnection()}
-            >
-              {testing ? 'Testing…' : 'Test connection'}
-            </button>
-            {testResult && (
-              <p
-                className={`text-sm ${testResult.ok ? 'text-emerald-300' : 'text-rose-300'}`}
-                role="status"
-              >
-                {testResult.ok ? `Connected: ${testResult.message}` : testResult.message}
-              </p>
-            )}
-          </div>
+          <label className="text-sm">
+            QNAP password
+            <input
+              type="password"
+              className="mt-1 w-full rounded-lg bg-white/10 px-3 py-2"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
+            />
+          </label>
+          <p className="text-xs text-white/50">
+            Use a local QTS account without 2-step verification. Password is stored in your wilab config.
+          </p>
         </>
+      )}
+      {service.integration && !isQnapIntegration(service.integration) && (
+        <label className="text-sm">
+          {service.integration.kind} API key
+          <input
+            className="mt-1 w-full rounded-lg bg-white/10 px-3 py-2"
+            value={apiKey}
+            onChange={(event) => setApiKey(event.target.value)}
+            placeholder="API key"
+          />
+        </label>
+      )}
+      {service.integration && (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            className="self-start rounded-lg border border-white/20 px-3 py-1.5 text-sm disabled:opacity-50"
+            disabled={testing || !url}
+            onClick={() => void onTestConnection()}
+          >
+            {testing ? 'Testing…' : 'Test connection'}
+          </button>
+          {testResult && (
+            <p
+              className={`text-sm ${testResult.ok ? 'text-emerald-300' : 'text-rose-300'}`}
+              role="status"
+            >
+              {testResult.ok ? `Connected: ${testResult.message}` : testResult.message}
+            </p>
+          )}
+        </div>
       )}
       <div className="mt-2 flex justify-between">
         <button type="button" className="text-sm text-rose-300" onClick={() => void onRemove()}>

@@ -33,6 +33,7 @@ export type IntegrationKind =
   | 'zigbee2mqtt'
   | 'unifi'
   | 'slzb-os'
+  | 'qnap'
 
 export type CatalogEntry = {
   id: CatalogEntryId
