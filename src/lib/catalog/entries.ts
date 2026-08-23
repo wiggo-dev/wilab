@@ -62,7 +62,7 @@ const entries: CatalogEntry[] = [
     name: 'Immich',
     defaultUrl: 'http://{host}:2283',
     logo: '',
-    integration: null,
+    integration: 'immich',
   },
   {
     id: 'uptime-kuma',

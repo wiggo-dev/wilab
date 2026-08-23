@@ -2,6 +2,7 @@ import type { Service } from '@/lib/config/types'
 import type { ServiceIntegration } from './types'
 import { fetchArrGlance } from './arr'
 import { fetchHomeAssistantGlance } from './home-assistant'
+import { fetchImmichGlance } from './immich'
 import { fetchPortainerGlance } from './portainer'
 import { fetchProwlarrGlance } from './prowlarr'
 import { fetchSabnzbdGlance } from './sabnzbd'
@@ -15,6 +16,7 @@ const SUPPORTED_KINDS = new Set([
   'portainer',
   'home-assistant',
   'prowlarr',
+  'immich',
 ])
 
 export async function fetchGlance(
@@ -36,6 +38,8 @@ export async function fetchGlance(
       return fetchHomeAssistantGlance(service.url, integration.apiKey, fetchImpl)
     case 'prowlarr':
       return fetchProwlarrGlance(service.url, integration.apiKey, fetchImpl)
+    case 'immich':
+      return fetchImmichGlance(service.url, integration.apiKey, fetchImpl)
     default:
       throw new Error(`Unsupported integration kind: ${integration.kind}`)
   }
