@@ -14,4 +14,4 @@ Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/
 
 ### E2E tests
 
-Browser smoke tests live in `e2e/` and run with `pnpm test:e2e`. Playwright starts `next dev` on port 3000 with an isolated temp `WILAB_DATA_DIR`. First run may require `pnpm exec playwright install chromium`.
+Browser smoke tests live in `e2e/` and run with `pnpm test:e2e`. Playwright starts a **separate** dev server on port **3001** with an isolated temp `WILAB_DATA_DIR` — it never touches `./data/config.json` used by `pnpm dev` on port 3000. First run may require `pnpm exec playwright install chromium`.
