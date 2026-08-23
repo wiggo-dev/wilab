@@ -1,6 +1,6 @@
 # wilab
 
-A single-user homelab landing page: a grid of links to self-hosted services, with live info pulled from services that expose an API. One Docker container, config on a volume.
+A single-user homelab landing page: a grid of links to self-hosted services, with live info pulled from services that expose an API. One Docker container; config in `./data` on the host.
 
 ## Quick start (Docker Compose)
 
@@ -17,9 +17,9 @@ Open [http://localhost:3000](http://localhost:3000). Click **Edit** to add servi
 
 ### Config and upgrades
 
-- Layout, services, integrations, and search providers persist in a Docker volume (`wilab-data` → `/data/config.json` inside the container).
-- Upgrades: `docker compose pull && docker compose up -d` — your config survives as long as you keep the volume.
-- To bind a host directory instead of a named volume, replace the `volumes` entry with `./data:/data`.
+- Config is stored on the host at `./data/config.json` (bind-mounted to `/data` in the container). Create the directory with `mkdir -p data` if Compose does not.
+- Upgrades: `docker compose pull && docker compose up -d` — your `./data` folder is left alone.
+- If you previously used the named `wilab-data` volume, copy it out once with `docker compose cp wilab:/data/config.json ./data/config.json` (after `mkdir -p data`), then recreate with the updated compose file.
 
 ### Build locally instead of pulling
 
