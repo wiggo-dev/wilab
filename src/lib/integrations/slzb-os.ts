@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
 }
@@ -57,3 +59,5 @@ export async function fetchSlzbOsGlance(
   const sensors = (await response.json()) as SlzbSensors
   return formatSlzbOsGlance(sensors)
 }
+
+export const slzbOsAdapter = apiKeyAdapter('slzb-os', fetchSlzbOsGlance)

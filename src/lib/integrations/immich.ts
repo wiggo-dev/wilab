@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
 }
@@ -34,3 +36,5 @@ export async function fetchImmichGlance(
   const stats = (await response.json()) as ServerStatistics
   return formatImmichGlance(stats)
 }
+
+export const immichAdapter = apiKeyAdapter('immich', fetchImmichGlance)

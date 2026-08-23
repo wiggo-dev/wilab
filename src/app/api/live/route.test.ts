@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { resetLiveState } from '@/lib/integrations/live'
+import { resetGlanceEngine } from '@/lib/integrations/live'
 
 describe('/api/live', () => {
   let dataDir: string
@@ -12,7 +12,7 @@ describe('/api/live', () => {
   beforeEach(async () => {
     dataDir = await mkdtemp(join(tmpdir(), 'wilab-api-live-'))
     process.env.WILAB_DATA_DIR = dataDir
-    resetLiveState()
+    resetGlanceEngine()
     fetchMock.mockReset()
     vi.stubGlobal('fetch', fetchMock)
     vi.resetModules()
@@ -25,7 +25,7 @@ describe('/api/live', () => {
       process.env.WILAB_DATA_DIR = previousDataDir
     }
     await rm(dataDir, { recursive: true, force: true })
-    resetLiveState()
+    resetGlanceEngine()
     vi.unstubAllGlobals()
     vi.resetModules()
   })

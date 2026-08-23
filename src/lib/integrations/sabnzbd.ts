@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
 }
@@ -53,3 +55,5 @@ export async function fetchSabnzbdGlance(
   const body = (await response.json()) as { queue?: Partial<SabnzbdQueueState> }
   return formatSabnzbdGlance(parseSabnzbdQueue(body))
 }
+
+export const sabnzbdAdapter = apiKeyAdapter('sabnzbd', fetchSabnzbdGlance)

@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
 }
@@ -97,3 +99,5 @@ export async function fetchUniFiGlance(
   const clientsBody = (await clientsResponse.json()) as UniFiClientsResponse
   return formatUniFiGlance(countClients(clientsBody))
 }
+
+export const unifiAdapter = apiKeyAdapter('unifi', fetchUniFiGlance)
