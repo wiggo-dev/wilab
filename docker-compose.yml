@@ -1,12 +1,14 @@
 services:
   wilab:
-    build: .
+    image: ghcr.io/wiggo-dev/wilab:latest
+    # build: .  # use local Dockerfile instead of pulling from GHCR
     ports:
       - '3000:3000'
     volumes:
       - wilab-data:/data
     environment:
       WILAB_DATA_DIR: /data
+    restart: unless-stopped
 
 volumes:
   wilab-data:
