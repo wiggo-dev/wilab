@@ -2,6 +2,14 @@ export function metricsUrl(serviceUrl: string): string {
   return `${serviceUrl.replace(/\/$/, '')}/metrics`
 }
 
+function monitorKey(labels: string): string | null {
+  const idMatch = labels.match(/monitor_id="([^"]*)"/)
+  if (idMatch) return idMatch[1]
+
+  const nameMatch = labels.match(/monitor_name="([^"]*)"/)
+  return nameMatch ? nameMatch[1] : null
+}
+
 export function parseUptimeKumaMetrics(body: string): { up: number; total: number } {
   const statuses = new Map<string, number>()
 
@@ -9,10 +17,17 @@ export function parseUptimeKumaMetrics(body: string): { up: number; total: numbe
     const trimmed = line.trim()
     if (!trimmed.startsWith('monitor_status{')) continue
 
-    const match = trimmed.match(/^monitor_status\{[^}]*monitor_id="([^"]+)"[^}]*\}\s+(-?\d+(?:\.\d+)?)/)
+    const match = trimmed.match(/^monitor_status\{(.+)\}\s+(-?\d+(?:\.\d+)?)$/)
     if (!match) continue
 
-    statuses.set(match[1], Number(match[2]))
+    const key = monitorKey(match[1])
+    if (key === null) continue
+
+    const status = Number(match[2])
+    const previous = statuses.get(key)
+    if (previous === undefined || status > previous) {
+      statuses.set(key, status)
+    }
   }
 
   let up = 0

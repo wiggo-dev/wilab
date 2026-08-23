@@ -63,23 +63,30 @@ export function ServiceTile({
     onReorder(payload.id)
   }
 
-  const inner = (
+  const tileContent = (
     <>
-      <ServiceLogo service={service} className={compact ? 'h-7 w-7' : 'h-10 w-10'} />
-      <div className={`truncate ${compact ? 'mt-1 text-[11px]' : 'mt-1.5 text-xs'}`}>{service.name}</div>
-      {glance && (
-        <div
-          className={`mt-1 max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] ${
-            glance.status === 'unavailable'
-              ? 'bg-amber-400/20 text-amber-200'
-              : 'bg-emerald-400/20 text-emerald-200'
-          } ${glance.status === 'stale' ? 'opacity-50' : ''}`}
-        >
-          {glance.text}
-        </div>
-      )}
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-1">
+        <ServiceLogo service={service} className={compact ? 'h-7 w-7' : 'h-10 w-10'} />
+        <div className={`truncate ${compact ? 'mt-1 text-[11px]' : 'mt-1.5 text-xs'}`}>{service.name}</div>
+      </div>
+      <div className="flex h-5 w-full shrink-0 items-center justify-center pb-1">
+        {glance ? (
+          <div
+            className={`max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
+              glance.status === 'unavailable'
+                ? 'bg-amber-400/20 text-amber-200'
+                : 'bg-emerald-400/20 text-emerald-200'
+            } ${glance.status === 'stale' ? 'opacity-50' : ''}`}
+          >
+            {glance.text}
+          </div>
+        ) : null}
+      </div>
     </>
   )
+
+  const interactiveClassName =
+    'flex min-h-0 w-full flex-1 flex-col items-center text-inherit no-underline'
 
   return (
     <div
@@ -87,7 +94,7 @@ export function ServiceTile({
       onDragStart={onDragStart}
       onDragOver={(event) => event.preventDefault()}
       onDrop={onDrop}
-      className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 ${compact ? 'h-32 w-28 justify-between' : 'aspect-square justify-center'} ${zone === 'pinned' ? 'ring-sky-400/40' : 'ring-white/10'} ${editMode ? 'cursor-grab' : ''}`}
+      className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 ${compact ? 'h-32 w-28' : 'aspect-square'} ${zone === 'pinned' ? 'ring-sky-400/40' : 'ring-white/10'} ${editMode ? 'cursor-grab' : ''}`}
     >
       {onTogglePin && (
         <button
@@ -104,21 +111,12 @@ export function ServiceTile({
         </button>
       )}
       {editMode && onEdit ? (
-        <button
-          type="button"
-          className="flex min-h-0 w-full flex-1 flex-col items-center justify-center"
-          onClick={onEdit}
-        >
-          {inner}
+        <button type="button" className={interactiveClassName} onClick={onEdit}>
+          {tileContent}
         </button>
       ) : (
-        <a
-          href={service.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex min-h-0 w-full flex-1 flex-col items-center justify-center text-inherit no-underline"
-        >
-          {inner}
+        <a href={service.url} target="_blank" rel="noopener noreferrer" className={interactiveClassName}>
+          {tileContent}
         </a>
       )}
       {service.tags.length > 0 && (
