@@ -1,0 +1,36 @@
+export const CATALOG_ENTRY_IDS = [
+  'home-assistant',
+  'zigbee2mqtt',
+  'esphome',
+  'sonarr',
+  'radarr',
+  'sabnzbd',
+  'prowlarr',
+  'portainer',
+  'immich',
+  'uptime-kuma',
+  'jellyfin',
+  'qnap',
+  'plex',
+  'vaultwarden',
+  'actual-budget',
+  'frigate',
+] as const
+
+export type CatalogEntryId = (typeof CATALOG_ENTRY_IDS)[number]
+
+export type IntegrationKind =
+  | 'home-assistant'
+  | 'sonarr'
+  | 'radarr'
+  | 'sabnzbd'
+  | 'portainer'
+  | 'uptime-kuma'
+
+export type CatalogEntry = {
+  id: CatalogEntryId
+  name: string
+  defaultUrl: string
+  logo: string
+  integration: IntegrationKind | null
+}

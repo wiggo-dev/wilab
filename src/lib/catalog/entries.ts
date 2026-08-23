@@ -1,0 +1,118 @@
+import type { CatalogEntry } from './types'
+
+const entries: CatalogEntry[] = [
+  {
+    id: 'home-assistant',
+    name: 'Home Assistant',
+    defaultUrl: 'http://{host}:8123',
+    logo: '',
+    integration: 'home-assistant',
+  },
+  {
+    id: 'zigbee2mqtt',
+    name: 'Zigbee2MQTT',
+    defaultUrl: 'http://{host}:8080',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'esphome',
+    name: 'ESPHome',
+    defaultUrl: 'http://{host}:6052',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'sonarr',
+    name: 'Sonarr',
+    defaultUrl: 'http://{host}:8989',
+    logo: '',
+    integration: 'sonarr',
+  },
+  {
+    id: 'radarr',
+    name: 'Radarr',
+    defaultUrl: 'http://{host}:7878',
+    logo: '',
+    integration: 'radarr',
+  },
+  {
+    id: 'sabnzbd',
+    name: 'SABnzbd',
+    defaultUrl: 'http://{host}:8080',
+    logo: '',
+    integration: 'sabnzbd',
+  },
+  {
+    id: 'prowlarr',
+    name: 'Prowlarr',
+    defaultUrl: 'http://{host}:9696',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'portainer',
+    name: 'Portainer',
+    defaultUrl: 'https://{host}:9443',
+    logo: '',
+    integration: 'portainer',
+  },
+  {
+    id: 'immich',
+    name: 'Immich',
+    defaultUrl: 'http://{host}:2283',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'uptime-kuma',
+    name: 'Uptime Kuma',
+    defaultUrl: 'http://{host}:3001',
+    logo: '',
+    integration: 'uptime-kuma',
+  },
+  {
+    id: 'jellyfin',
+    name: 'Jellyfin',
+    defaultUrl: 'http://{host}:8096',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'qnap',
+    name: 'QNAP',
+    defaultUrl: 'http://{host}:8080',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'plex',
+    name: 'Plex',
+    defaultUrl: 'http://{host}:32400/web',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'vaultwarden',
+    name: 'Vaultwarden',
+    defaultUrl: 'http://{host}',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'actual-budget',
+    name: 'Actual Budget',
+    defaultUrl: 'http://{host}:5006',
+    logo: '',
+    integration: null,
+  },
+  {
+    id: 'frigate',
+    name: 'Frigate',
+    defaultUrl: 'http://{host}:8971',
+    logo: '',
+    integration: null,
+  },
+]
+
+export const CATALOG_ENTRIES: CatalogEntry[] = entries
