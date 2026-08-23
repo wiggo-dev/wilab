@@ -1,0 +1,140 @@
+function apiBase(serviceUrl: string): string {
+  return serviceUrl.replace(/\/$/, '')
+}
+
+export function endpointsUrl(serviceUrl: string): string {
+  return `${apiBase(serviceUrl)}/api/endpoints`
+}
+
+export function containersUrl(serviceUrl: string, endpointId: number): string {
+  return `${apiBase(serviceUrl)}/api/endpoints/${endpointId}/docker/containers/json?all=true`
+}
+
+type DockerSnapshot = {
+  RunningContainerCount?: number
+  ContainerCount?: number
+  UnhealthyContainerCount?: number
+}
+
+type DockerContainer = {
+  State?: string
+  Health?: { Status?: string }
+}
+
+export type PortainerEndpoint = {
+  Id?: number
+  Snapshots?: DockerSnapshot[]
+}
+
+export function sumPortainerSnapshots(endpoints: PortainerEndpoint[]): {
+  running: number
+  total: number
+  unhealthy: number
+} {
+  let running = 0
+  let total = 0
+  let unhealthy = 0
+
+  for (const endpoint of endpoints) {
+    const snapshots = endpoint.Snapshots ?? []
+    const snapshot = snapshots.at(-1)
+    if (!snapshot) continue
+
+    running += snapshot.RunningContainerCount ?? 0
+    total += snapshot.ContainerCount ?? 0
+    unhealthy += snapshot.UnhealthyContainerCount ?? 0
+  }
+
+  return { running, total, unhealthy }
+}
+
+export function countDockerContainers(containers: DockerContainer[]): {
+  running: number
+  total: number
+  unhealthy: number
+} {
+  let running = 0
+  let unhealthy = 0
+
+  for (const container of containers) {
+    if (container.State === 'running') running += 1
+    if (container.Health?.Status === 'unhealthy') unhealthy += 1
+  }
+
+  return { running, total: containers.length, unhealthy }
+}
+
+export function formatPortainerGlance(counts: {
+  running: number
+  total: number
+  unhealthy: number
+}): string {
+  if (counts.unhealthy > 0) return `${counts.unhealthy} unhealthy`
+  return `${counts.running}/${counts.total} running`
+}
+
+async function fetchEndpointContainers(
+  serviceUrl: string,
+  apiKey: string,
+  endpointId: number,
+  fetchImpl: typeof fetch,
+): Promise<DockerContainer[]> {
+  const response = await fetchImpl(containersUrl(serviceUrl, endpointId), {
+    headers: { 'X-API-Key': apiKey },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Portainer containers failed: ${response.status}`)
+  }
+
+  return (await response.json()) as DockerContainer[]
+}
+
+async function sumContainersAcrossEndpoints(
+  serviceUrl: string,
+  apiKey: string,
+  endpoints: PortainerEndpoint[],
+  fetchImpl: typeof fetch,
+): Promise<{ running: number; total: number; unhealthy: number }> {
+  let running = 0
+  let total = 0
+  let unhealthy = 0
+
+  for (const endpoint of endpoints) {
+    if (endpoint.Id == null) continue
+
+    const containers = await fetchEndpointContainers(serviceUrl, apiKey, endpoint.Id, fetchImpl)
+    const counts = countDockerContainers(containers)
+    running += counts.running
+    total += counts.total
+    unhealthy += counts.unhealthy
+  }
+
+  return { running, total, unhealthy }
+}
+
+export async function fetchPortainerGlance(
+  serviceUrl: string,
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string> {
+  const response = await fetchImpl(endpointsUrl(serviceUrl), {
+    headers: { 'X-API-Key': apiKey },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Portainer endpoints failed: ${response.status}`)
+  }
+
+  const endpoints = (await response.json()) as PortainerEndpoint[]
+  let counts = sumPortainerSnapshots(endpoints)
+
+  if (counts.total === 0 && counts.running === 0 && counts.unhealthy === 0) {
+    const hasEndpointIds = endpoints.some((endpoint) => endpoint.Id != null)
+    if (hasEndpointIds) {
+      counts = await sumContainersAcrossEndpoints(serviceUrl, apiKey, endpoints, fetchImpl)
+    }
+  }
+
+  return formatPortainerGlance(counts)
+}
