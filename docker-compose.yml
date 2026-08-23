@@ -1,0 +1,12 @@
+services:
+  wilab:
+    build: .
+    ports:
+      - '3000:3000'
+    volumes:
+      - wilab-data:/data
+    environment:
+      WILAB_DATA_DIR: /data
+
+volumes:
+  wilab-data:
