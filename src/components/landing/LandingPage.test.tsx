@@ -97,4 +97,36 @@ describe('LandingPage', () => {
     expect(saved.services).toHaveLength(1)
     expect(saved.services[0].catalogId).toBe('sonarr')
   })
+
+  it('shows a trash control in edit mode and deletes after confirmation', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === '/api/live') {
+        return { ok: true, json: async () => ({ services: {} }) }
+      }
+      return { ok: true }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<LandingPage config={config} catalog={catalog} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Router' }))
+
+    expect(screen.getByText('Remove service?')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByText('Remove service?')).toBeNull()
+    expect(screen.getByText('Router')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Router' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+
+    await waitFor(() => expect(screen.queryByText('Router')).toBeNull())
+
+    const configPut = fetchMock.mock.calls.find(
+      ([url, init]) => url === '/api/config' && (init as RequestInit | undefined)?.method === 'PUT',
+    )
+    expect(configPut).toBeTruthy()
+    const saved = JSON.parse(String((configPut?.[1] as RequestInit).body))
+    expect(saved.services.some((service: { id: string }) => service.id === 'svc-infra')).toBe(false)
+  })
 })

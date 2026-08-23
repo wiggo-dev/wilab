@@ -32,9 +32,15 @@ export function ServiceTile({
   activeTag,
   editMode,
   pinned,
+  isDragging,
+  isDropTarget,
   onTagClick,
   onEdit,
   onTogglePin,
+  onDelete,
+  onDragBegin,
+  onDragHover,
+  onDragEnd,
   onReorder,
   glance,
 }: {
@@ -44,14 +50,28 @@ export function ServiceTile({
   activeTag: string | null
   editMode?: boolean
   pinned?: boolean
+  isDragging?: boolean
+  isDropTarget?: boolean
   onTagClick: (tag: string) => void
   onEdit?: () => void
   onTogglePin?: () => void
+  onDelete?: () => void
+  onDragBegin?: (zone: 'grid' | 'pinned', id: string) => void
+  onDragHover?: (zone: 'grid' | 'pinned', id: string) => void
+  onDragEnd?: () => void
   onReorder?: (draggedId: string) => void
   glance?: GlanceResult
 }) {
   function onDragStart(event: DragEvent) {
     event.dataTransfer.setData('text/plain', JSON.stringify({ zone, id: service.id }))
+    event.dataTransfer.effectAllowed = 'move'
+    onDragBegin?.(zone, service.id)
+  }
+
+  function onDragOver(event: DragEvent) {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    onDragHover?.(zone, service.id)
   }
 
   function onDrop(event: DragEvent) {
@@ -61,6 +81,7 @@ export function ServiceTile({
     const payload = JSON.parse(raw) as { zone: 'grid' | 'pinned'; id: string }
     if (payload.zone !== zone || payload.id === service.id) return
     onReorder(payload.id)
+    onDragEnd?.()
   }
 
   const tileContent = (
@@ -92,9 +113,10 @@ export function ServiceTile({
     <div
       draggable={editMode}
       onDragStart={onDragStart}
-      onDragOver={(event) => event.preventDefault()}
+      onDragOver={onDragOver}
+      onDragEnd={() => onDragEnd?.()}
       onDrop={onDrop}
-      className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 ${compact ? 'h-32 w-28' : 'aspect-square'} ${zone === 'pinned' ? 'ring-sky-400/40' : 'ring-white/10'} ${editMode ? 'cursor-grab' : ''}`}
+      className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 transition-[transform,box-shadow,opacity] duration-150 ${compact ? 'h-32 w-28' : 'aspect-square'} ${zone === 'pinned' ? 'ring-sky-400/40' : 'ring-white/10'} ${editMode ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-40 scale-95' : ''} ${isDropTarget ? 'ring-2 ring-amber-300/80 shadow-[0_0_0_4px_rgba(251,191,36,0.15)]' : ''}`}
     >
       {onTogglePin && (
         <button
@@ -108,6 +130,29 @@ export function ServiceTile({
           aria-label={pinned ? 'Unpin' : 'Pin'}
         >
           ★
+        </button>
+      )}
+      {editMode && onDelete && (
+        <button
+          type="button"
+          className="absolute top-2 right-2 z-10 rounded-md bg-black/40 p-1 text-rose-300 hover:bg-rose-500/20 hover:text-rose-200"
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onDelete()
+          }}
+          onMouseDown={(event) => event.stopPropagation()}
+          aria-label={`Delete ${service.name}`}
+        >
+          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" aria-hidden>
+            <path
+              d="M3.5 4.5h9M6 4.5V3.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1M5 4.5l.5 8.5h5L11 4.5"
+              stroke="currentColor"
+              strokeWidth="1.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       )}
       {editMode && onEdit ? (

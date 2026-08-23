@@ -5,6 +5,10 @@ import type { CatalogEntry } from '@/lib/catalog/types'
 import type { WilabConfig } from '@/lib/config/types'
 import { useWilabConfig } from '@/hooks/useWilabConfig'
 import { useLiveGlances } from '@/hooks/useLiveGlances'
+import {
+  type DragPreviewState,
+  shouldShowDropSlot,
+} from '@/lib/landing/drag-preview'
 import { allTags, buildSearchUrl, gridServices, pinnedServices } from '@/lib/landing/view-model'
 import { CatalogPicker } from './CatalogPicker'
 import { CustomServiceForm } from './CustomServiceForm'
@@ -20,10 +24,20 @@ type DialogState =
   | { kind: 'add' }
   | { kind: 'custom' }
   | { kind: 'search-providers' }
+  | { kind: 'confirm-delete'; id: string }
 
 type LandingPageProps = {
   config: WilabConfig
   catalog: CatalogEntry[]
+}
+
+function DropSlot({ compact }: { compact?: boolean }) {
+  return (
+    <div
+      aria-hidden
+      className={`rounded-2xl border-2 border-dashed border-amber-300/70 bg-amber-400/10 ${compact ? 'h-32 w-28' : 'aspect-square'}`}
+    />
+  )
 }
 
 export function LandingPage({ config: initialConfig, catalog }: LandingPageProps) {
@@ -47,6 +61,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
+  const [drag, setDrag] = useState<DragPreviewState | null>(null)
 
   const tags = useMemo(() => allTags(config.services), [config.services])
   const pinned = useMemo(
@@ -60,6 +75,10 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
 
   const editingService =
     dialog.kind === 'edit' ? config.services.find((service) => service.id === dialog.id) : null
+  const deletingService =
+    dialog.kind === 'confirm-delete'
+      ? config.services.find((service) => service.id === dialog.id)
+      : null
 
   function toggleTag(tag: string) {
     setActiveTag((current) => (current === tag ? null : tag))
@@ -76,6 +95,29 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   async function pickCatalogEntry(entry: CatalogEntry) {
     const serviceId = await addFromCatalog(entry)
     setDialog({ kind: 'edit', id: serviceId })
+  }
+
+  function onDragBegin(zone: 'grid' | 'pinned', id: string) {
+    setDrag({ zone, draggedId: id, overId: id })
+  }
+
+  function onDragHover(zone: 'grid' | 'pinned', id: string) {
+    setDrag((current) => {
+      if (!current || current.zone !== zone) return current
+      if (current.overId === id) return current
+      return { ...current, overId: id }
+    })
+  }
+
+  function onDragEnd() {
+    setDrag(null)
+  }
+
+  async function confirmDelete() {
+    if (!deletingService) return
+    const id = deletingService.id
+    await deleteService(id)
+    setDialog({ kind: 'none' })
   }
 
   return (
@@ -145,20 +187,31 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           <h2 className="mb-2 text-xs tracking-[0.25em] text-sky-200/70 uppercase">Pinned</h2>
           <div className="flex flex-wrap gap-2">
             {pinned.map((service) => (
-              <ServiceTile
-                key={service.id}
-                service={service}
-                compact
-                zone="pinned"
-                activeTag={activeTag}
-                editMode={editMode}
-                pinned
-                onTagClick={toggleTag}
-                onEdit={() => setDialog({ kind: 'edit', id: service.id })}
-                onTogglePin={() => void pinService(service.id)}
-                onReorder={(draggedId) => dragReorderPinned(draggedId, service.id)}
-                glance={loaded ? glances[service.id] : undefined}
-              />
+              <div key={service.id} className="contents">
+                {shouldShowDropSlot(drag, 'pinned', service.id) && <DropSlot compact />}
+                <ServiceTile
+                  service={service}
+                  compact
+                  zone="pinned"
+                  activeTag={activeTag}
+                  editMode={editMode}
+                  pinned
+                  isDragging={drag?.zone === 'pinned' && drag.draggedId === service.id}
+                  isDropTarget={shouldShowDropSlot(drag, 'pinned', service.id)}
+                  onTagClick={toggleTag}
+                  onEdit={() => setDialog({ kind: 'edit', id: service.id })}
+                  onTogglePin={() => void pinService(service.id)}
+                  onDelete={() => setDialog({ kind: 'confirm-delete', id: service.id })}
+                  onDragBegin={onDragBegin}
+                  onDragHover={onDragHover}
+                  onDragEnd={onDragEnd}
+                  onReorder={(draggedId) => {
+                    dragReorderPinned(draggedId, service.id)
+                    onDragEnd()
+                  }}
+                  glance={loaded ? glances[service.id] : undefined}
+                />
+              </div>
             ))}
           </div>
         </section>
@@ -166,19 +219,30 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           <h2 className="mb-2 text-xs tracking-[0.25em] text-sky-200/70 uppercase">Main grid</h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {grid.map((service) => (
-              <ServiceTile
-                key={service.id}
-                service={service}
-                zone="grid"
-                activeTag={activeTag}
-                editMode={editMode}
-                pinned={config.pinnedOrder.includes(service.id)}
-                onTagClick={toggleTag}
-                onEdit={() => setDialog({ kind: 'edit', id: service.id })}
-                onTogglePin={() => void pinService(service.id)}
-                onReorder={(draggedId) => dragReorderGrid(draggedId, service.id)}
-                glance={loaded ? glances[service.id] : undefined}
-              />
+              <div key={service.id} className="contents">
+                {shouldShowDropSlot(drag, 'grid', service.id) && <DropSlot />}
+                <ServiceTile
+                  service={service}
+                  zone="grid"
+                  activeTag={activeTag}
+                  editMode={editMode}
+                  pinned={config.pinnedOrder.includes(service.id)}
+                  isDragging={drag?.zone === 'grid' && drag.draggedId === service.id}
+                  isDropTarget={shouldShowDropSlot(drag, 'grid', service.id)}
+                  onTagClick={toggleTag}
+                  onEdit={() => setDialog({ kind: 'edit', id: service.id })}
+                  onTogglePin={() => void pinService(service.id)}
+                  onDelete={() => setDialog({ kind: 'confirm-delete', id: service.id })}
+                  onDragBegin={onDragBegin}
+                  onDragHover={onDragHover}
+                  onDragEnd={onDragEnd}
+                  onReorder={(draggedId) => {
+                    dragReorderGrid(draggedId, service.id)
+                    onDragEnd()
+                  }}
+                  glance={loaded ? glances[service.id] : undefined}
+                />
+              </div>
             ))}
             {editMode && (
               <button
@@ -208,6 +272,31 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
               setDialog({ kind: 'none' })
             }}
           />
+        </Modal>
+      )}
+
+      {dialog.kind === 'confirm-delete' && deletingService && (
+        <Modal title="Remove service?" onClose={() => setDialog({ kind: 'none' })}>
+          <p className="text-sm text-slate-300">
+            Remove <span className="font-medium text-white">{deletingService.name}</span> from your
+            landing page? This cannot be undone from here.
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+              onClick={() => setDialog({ kind: 'none' })}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="rounded-lg bg-rose-500 px-3 py-1.5 text-sm text-white hover:bg-rose-400"
+              onClick={() => void confirmDelete()}
+            >
+              Remove
+            </button>
+          </div>
         </Modal>
       )}
 
