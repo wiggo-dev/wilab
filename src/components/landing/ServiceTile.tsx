@@ -41,7 +41,7 @@ export function ServiceTile({
   onDragBegin,
   onDragHover,
   onDragEnd,
-  onReorder,
+  onDropCommit,
   glance,
 }: {
   service: DisplayService
@@ -59,7 +59,7 @@ export function ServiceTile({
   onDragBegin?: (zone: 'grid' | 'pinned', id: string) => void
   onDragHover?: (zone: 'grid' | 'pinned', id: string) => void
   onDragEnd?: () => void
-  onReorder?: (draggedId: string) => void
+  onDropCommit?: () => void
   glance?: GlanceResult
 }) {
   function onDragStart(event: DragEvent) {
@@ -76,12 +76,7 @@ export function ServiceTile({
 
   function onDrop(event: DragEvent) {
     event.preventDefault()
-    const raw = event.dataTransfer.getData('text/plain')
-    if (!raw || !onReorder) return
-    const payload = JSON.parse(raw) as { zone: 'grid' | 'pinned'; id: string }
-    if (payload.zone !== zone || payload.id === service.id) return
-    onReorder(payload.id)
-    onDragEnd?.()
+    onDropCommit?.()
   }
 
   const tileContent = (

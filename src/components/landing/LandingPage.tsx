@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import type { DragEvent } from 'react'
 import type { CatalogEntry } from '@/lib/catalog/types'
 import type { WilabConfig } from '@/lib/config/types'
 import { useWilabConfig } from '@/hooks/useWilabConfig'
@@ -31,10 +32,29 @@ type LandingPageProps = {
   catalog: CatalogEntry[]
 }
 
-function DropSlot({ compact }: { compact?: boolean }) {
+function DropSlot({
+  compact,
+  beforeId,
+  onHover,
+  onDropCommit,
+}: {
+  compact?: boolean
+  beforeId: string
+  onHover: (beforeId: string) => void
+  onDropCommit: () => void
+}) {
   return (
     <div
       aria-hidden
+      onDragOver={(event: DragEvent) => {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+        onHover(beforeId)
+      }}
+      onDrop={(event: DragEvent) => {
+        event.preventDefault()
+        onDropCommit()
+      }}
       className={`rounded-2xl border-2 border-dashed border-amber-300/70 bg-amber-400/10 ${compact ? 'h-32 w-28' : 'aspect-square'}`}
     />
   )
@@ -62,6 +82,8 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const [searchQuery, setSearchQuery] = useState('')
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
   const [drag, setDrag] = useState<DragPreviewState | null>(null)
+  const dragRef = useRef<DragPreviewState | null>(null)
+  const didDropRef = useRef(false)
 
   const tags = useMemo(() => allTags(config.services), [config.services])
   const pinned = useMemo(
@@ -97,20 +119,44 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     setDialog({ kind: 'edit', id: serviceId })
   }
 
+  function setDragState(next: DragPreviewState | null) {
+    dragRef.current = next
+    setDrag(next)
+  }
+
   function onDragBegin(zone: 'grid' | 'pinned', id: string) {
-    setDrag({ zone, draggedId: id, overId: id })
+    didDropRef.current = false
+    setDragState({ zone, draggedId: id, overId: id })
   }
 
   function onDragHover(zone: 'grid' | 'pinned', id: string) {
-    setDrag((current) => {
-      if (!current || current.zone !== zone) return current
-      if (current.overId === id) return current
-      return { ...current, overId: id }
-    })
+    const current = dragRef.current
+    if (!current || current.zone !== zone) return
+    if (current.overId === id) return
+    setDragState({ ...current, overId: id })
+  }
+
+  function commitDrag() {
+    const current = dragRef.current
+    if (!current?.overId || current.draggedId === current.overId) {
+      setDragState(null)
+      return
+    }
+
+    didDropRef.current = true
+    if (current.zone === 'grid') {
+      dragReorderGrid(current.draggedId, current.overId)
+    } else {
+      dragReorderPinned(current.draggedId, current.overId)
+    }
+    setDragState(null)
   }
 
   function onDragEnd() {
-    setDrag(null)
+    if (!didDropRef.current) {
+      setDragState(null)
+    }
+    didDropRef.current = false
   }
 
   async function confirmDelete() {
@@ -188,7 +234,14 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           <div className="flex flex-wrap gap-2">
             {pinned.map((service) => (
               <div key={service.id} className="contents">
-                {shouldShowDropSlot(drag, 'pinned', service.id) && <DropSlot compact />}
+                {shouldShowDropSlot(drag, 'pinned', service.id) && (
+                  <DropSlot
+                    compact
+                    beforeId={service.id}
+                    onHover={(beforeId) => onDragHover('pinned', beforeId)}
+                    onDropCommit={commitDrag}
+                  />
+                )}
                 <ServiceTile
                   service={service}
                   compact
@@ -205,10 +258,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                   onDragBegin={onDragBegin}
                   onDragHover={onDragHover}
                   onDragEnd={onDragEnd}
-                  onReorder={(draggedId) => {
-                    dragReorderPinned(draggedId, service.id)
-                    onDragEnd()
-                  }}
+                  onDropCommit={commitDrag}
                   glance={loaded ? glances[service.id] : undefined}
                 />
               </div>
@@ -220,7 +270,13 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {grid.map((service) => (
               <div key={service.id} className="contents">
-                {shouldShowDropSlot(drag, 'grid', service.id) && <DropSlot />}
+                {shouldShowDropSlot(drag, 'grid', service.id) && (
+                  <DropSlot
+                    beforeId={service.id}
+                    onHover={(beforeId) => onDragHover('grid', beforeId)}
+                    onDropCommit={commitDrag}
+                  />
+                )}
                 <ServiceTile
                   service={service}
                   zone="grid"
@@ -236,10 +292,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                   onDragBegin={onDragBegin}
                   onDragHover={onDragHover}
                   onDragEnd={onDragEnd}
-                  onReorder={(draggedId) => {
-                    dragReorderGrid(draggedId, service.id)
-                    onDragEnd()
-                  }}
+                  onDropCommit={commitDrag}
                   glance={loaded ? glances[service.id] : undefined}
                 />
               </div>
