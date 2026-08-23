@@ -7,6 +7,7 @@ import { fetchPortainerGlance } from './portainer'
 import { fetchProwlarrGlance } from './prowlarr'
 import { fetchSabnzbdGlance } from './sabnzbd'
 import { fetchUptimeKumaGlance } from './uptime-kuma'
+import { fetchZigbee2MqttGlance } from './zigbee2mqtt'
 
 const SUPPORTED_KINDS = new Set([
   'uptime-kuma',
@@ -17,6 +18,7 @@ const SUPPORTED_KINDS = new Set([
   'home-assistant',
   'prowlarr',
   'immich',
+  'zigbee2mqtt',
 ])
 
 export async function fetchGlance(
@@ -40,6 +42,8 @@ export async function fetchGlance(
       return fetchProwlarrGlance(service.url, integration.apiKey, fetchImpl)
     case 'immich':
       return fetchImmichGlance(service.url, integration.apiKey, fetchImpl)
+    case 'zigbee2mqtt':
+      return fetchZigbee2MqttGlance(service.url, integration.apiKey, fetchImpl)
     default:
       throw new Error(`Unsupported integration kind: ${integration.kind}`)
   }

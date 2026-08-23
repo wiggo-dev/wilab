@@ -13,7 +13,7 @@ const entries: CatalogEntry[] = [
     name: 'Zigbee2MQTT',
     defaultUrl: 'http://{host}:8080',
     logo: '',
-    integration: null,
+    integration: 'zigbee2mqtt',
   },
   {
     id: 'esphome',
