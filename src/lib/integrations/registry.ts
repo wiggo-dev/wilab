@@ -6,7 +6,9 @@ import { fetchImmichGlance } from './immich'
 import { fetchPortainerGlance } from './portainer'
 import { fetchProwlarrGlance } from './prowlarr'
 import { fetchSabnzbdGlance } from './sabnzbd'
+import { fetchSlzbOsGlance } from './slzb-os'
 import { fetchUptimeKumaGlance } from './uptime-kuma'
+import { fetchUniFiGlance } from './unifi'
 import { fetchZigbee2MqttGlance } from './zigbee2mqtt'
 
 const SUPPORTED_KINDS = new Set([
@@ -19,6 +21,8 @@ const SUPPORTED_KINDS = new Set([
   'prowlarr',
   'immich',
   'zigbee2mqtt',
+  'unifi',
+  'slzb-os',
 ])
 
 export async function fetchGlance(
@@ -44,6 +48,10 @@ export async function fetchGlance(
       return fetchImmichGlance(service.url, integration.apiKey, fetchImpl)
     case 'zigbee2mqtt':
       return fetchZigbee2MqttGlance(service.url, integration.apiKey, fetchImpl)
+    case 'unifi':
+      return fetchUniFiGlance(service.url, integration.apiKey, fetchImpl)
+    case 'slzb-os':
+      return fetchSlzbOsGlance(service.url, integration.apiKey, fetchImpl)
     default:
       throw new Error(`Unsupported integration kind: ${integration.kind}`)
   }

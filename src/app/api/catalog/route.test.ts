@@ -8,7 +8,7 @@ describe('/api/catalog', () => {
     const body = await response.json()
 
     expect(response.status).toBe(200)
-    expect(body).toHaveLength(16)
+    expect(body).toHaveLength(18)
     expect(body[0]).toMatchObject({
       id: expect.any(String),
       name: expect.any(String),

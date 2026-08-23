@@ -9,6 +9,8 @@ export const CATALOG_ENTRY_IDS = [
   'portainer',
   'immich',
   'uptime-kuma',
+  'unifi',
+  'slzb-os',
   'jellyfin',
   'qnap',
   'plex',
@@ -29,6 +31,8 @@ export type IntegrationKind =
   | 'prowlarr'
   | 'immich'
   | 'zigbee2mqtt'
+  | 'unifi'
+  | 'slzb-os'
 
 export type CatalogEntry = {
   id: CatalogEntryId

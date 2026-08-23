@@ -72,6 +72,20 @@ const entries: CatalogEntry[] = [
     integration: 'uptime-kuma',
   },
   {
+    id: 'unifi',
+    name: 'UniFi Network',
+    defaultUrl: 'https://{host}',
+    logo: '',
+    integration: 'unifi',
+  },
+  {
+    id: 'slzb-os',
+    name: 'SLZB-OS',
+    defaultUrl: 'http://{host}',
+    logo: '',
+    integration: 'slzb-os',
+  },
+  {
     id: 'jellyfin',
     name: 'Jellyfin',
     defaultUrl: 'http://{host}:8096',

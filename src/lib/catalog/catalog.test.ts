@@ -3,8 +3,8 @@ import { CATALOG_ENTRY_IDS } from './types'
 import { getCatalog, getCatalogEntryById, catalogLogoPath } from './catalog'
 
 describe('catalog', () => {
-  it('contains all 16 predefined services', () => {
-    expect(getCatalog()).toHaveLength(16)
+  it('contains all predefined services', () => {
+    expect(getCatalog()).toHaveLength(18)
     expect(getCatalog().map((entry) => entry.id).sort()).toEqual([...CATALOG_ENTRY_IDS].sort())
   })
 
