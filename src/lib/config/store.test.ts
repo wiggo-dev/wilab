@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_SEARCH_PROVIDERS } from './defaults'
-import { ConfigStore } from './store'
+import { ConfigStore, resolveDataDir } from './store'
 
 describe('ConfigStore', () => {
   let dataDir: string
@@ -71,5 +71,27 @@ describe('ConfigStore', () => {
     const config = await store.load()
     expect(config.gridOrder).toEqual(['from-tmp'])
     expect(await readFile(join(dataDir, 'config.json'), 'utf8')).toBe(JSON.stringify(promoted))
+  })
+})
+
+describe('resolveDataDir', () => {
+  const previousDataDir = process.env.WILAB_DATA_DIR
+
+  afterEach(() => {
+    if (previousDataDir === undefined) {
+      delete process.env.WILAB_DATA_DIR
+    } else {
+      process.env.WILAB_DATA_DIR = previousDataDir
+    }
+  })
+
+  it('uses WILAB_DATA_DIR when set', () => {
+    process.env.WILAB_DATA_DIR = '/custom/data'
+    expect(resolveDataDir()).toBe('/custom/data')
+  })
+
+  it('defaults to ./data under cwd for local dev', () => {
+    delete process.env.WILAB_DATA_DIR
+    expect(resolveDataDir()).toBe(join(process.cwd(), 'data'))
   })
 })

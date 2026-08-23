@@ -85,7 +85,13 @@ export class ConfigStore {
   }
 }
 
+export function resolveDataDir(): string {
+  if (process.env.WILAB_DATA_DIR) {
+    return process.env.WILAB_DATA_DIR
+  }
+  return join(process.cwd(), 'data')
+}
+
 export function getConfigStore(): ConfigStore {
-  const dataDir = process.env.WILAB_DATA_DIR ?? '/data'
-  return new ConfigStore(dataDir)
+  return new ConfigStore(resolveDataDir())
 }
