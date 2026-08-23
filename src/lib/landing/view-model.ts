@@ -14,9 +14,14 @@ export function gridServices(
   gridOrder: string[],
   activeTag: string | null,
 ): Service[] {
-  return orderServices(services, gridOrder).filter((service) =>
-    activeTag ? service.tags.includes(activeTag) : true,
-  )
+  const effectiveOrder =
+    gridOrder.length > 0 ? gridOrder : services.map((service) => service.id)
+  const listed = new Set(effectiveOrder)
+  const ordered = orderServices(services, effectiveOrder)
+  const trailing = services.filter((service) => !listed.has(service.id))
+  const visible = [...ordered, ...trailing]
+
+  return visible.filter((service) => (activeTag ? service.tags.includes(activeTag) : true))
 }
 
 export function allTags(services: Service[]): string[] {

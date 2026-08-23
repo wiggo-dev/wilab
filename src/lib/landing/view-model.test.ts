@@ -21,6 +21,26 @@ describe('landing view-model', () => {
     ])
   })
 
+  it('falls back to all services when grid order is empty', () => {
+    expect(gridServices(services, [], null).map((service) => service.id)).toEqual([
+      'svc-ha',
+      'svc-jellyfin',
+      'svc-sonarr',
+      'svc-radarr',
+      'svc-infra',
+    ])
+  })
+
+  it('appends services missing from the grid order list', () => {
+    expect(gridServices(services, ['svc-ha'], null).map((service) => service.id)).toEqual([
+      'svc-ha',
+      'svc-jellyfin',
+      'svc-sonarr',
+      'svc-radarr',
+      'svc-infra',
+    ])
+  })
+
   it('returns all pinned services regardless of tag filter', () => {
     const pinned = pinnedServices(services, pinnedOrder)
     expect(pinned).toHaveLength(2)
