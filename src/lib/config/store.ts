@@ -2,6 +2,7 @@ import { closeSync, fsyncSync, openSync, renameSync } from 'node:fs'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createDefaultConfig } from './defaults'
+import { configsEqual, normalizeWilabConfig } from './normalize'
 import type { WilabConfig } from './types'
 import { SCHEMA_VERSION } from './types'
 
@@ -22,8 +23,12 @@ export class ConfigStore {
 
     try {
       const raw = await readFile(this.configPath(), 'utf8')
-      const config = JSON.parse(raw) as WilabConfig
-      this.assertSchemaVersion(config)
+      const parsed = JSON.parse(raw) as WilabConfig
+      this.assertSchemaVersion(parsed)
+      const config = normalizeWilabConfig(parsed)
+      if (!configsEqual(parsed, config)) {
+        await this.writeAtomic(config)
+      }
       return config
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
@@ -35,10 +40,15 @@ export class ConfigStore {
     }
   }
 
-  async save(config: WilabConfig): Promise<void> {
+  async save(config: WilabConfig): Promise<WilabConfig> {
     this.assertSchemaVersion(config)
+    const normalized = normalizeWilabConfig(config)
     await mkdir(this.dataDir, { recursive: true })
+    await this.writeAtomic(normalized)
+    return normalized
+  }
 
+  private async writeAtomic(config: WilabConfig): Promise<void> {
     const payload = `${JSON.stringify(config, null, 2)}\n`
     const tmpPath = this.tmpPath()
     await writeFile(tmpPath, payload, 'utf8')

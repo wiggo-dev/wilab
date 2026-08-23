@@ -1,4 +1,5 @@
 import WebSocket from 'ws'
+import { apiKeyAdapter } from './adapter'
 import { UPSTREAM_TIMEOUT_MS } from './types'
 
 export type ZigbeeDevice = {
@@ -155,3 +156,5 @@ export async function fetchZigbee2MqttGlance(
     countDeviceAvailability(snapshot.devices, snapshot.availabilityByName),
   )
 }
+
+export const zigbee2mqttAdapter = apiKeyAdapter('zigbee2mqtt', fetchZigbee2MqttGlance)

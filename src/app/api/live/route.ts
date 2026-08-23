@@ -1,9 +1,8 @@
 import { getConfigStore } from '@/lib/config/store'
-import { getLiveGlances } from '@/lib/integrations/live'
-import { upstreamFetch } from '@/lib/integrations/upstream-fetch'
+import { getGlanceEngine } from '@/lib/integrations/live'
 
 export async function GET() {
   const config = await getConfigStore().load()
-  const live = await getLiveGlances(config, upstreamFetch)
+  const live = await getGlanceEngine().get(config)
   return Response.json(live)
 }

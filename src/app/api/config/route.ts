@@ -8,6 +8,6 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   const body = (await request.json()) as WilabConfig
-  await getConfigStore().save(body)
-  return Response.json(body)
+  const saved = await getConfigStore().save(body)
+  return Response.json(saved)
 }

@@ -1,4 +1,6 @@
+import type { IntegrationAdapter } from './adapter'
 import { LIVE_COALESCE_MS } from './types'
+import { isQnapIntegration } from './types'
 
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
@@ -159,4 +161,15 @@ export async function fetchQnapGlance(
   const cpu = parseCpuUsage(readXmlTag(xml, 'cpu_usage'))
   const mem = parseMemoryUsagePercent(readXmlTag(xml, 'total_memory'), readXmlTag(xml, 'free_memory'))
   return formatQnapGlance(cpu, mem)
+}
+
+export const qnapAdapter: IntegrationAdapter = {
+  kind: 'qnap',
+  createDefault: () => ({ kind: 'qnap', username: '', password: '' }),
+  fetchGlance: (service, integration, fetchImpl) => {
+    if (!isQnapIntegration(integration)) {
+      throw new Error('QNAP integration requires username and password')
+    }
+    return fetchQnapGlance(service.url, integration.username, integration.password, fetchImpl)
+  },
 }

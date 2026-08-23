@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
 }
@@ -37,3 +39,5 @@ export async function fetchHomeAssistantGlance(
   const states = (await response.json()) as HomeAssistantState[]
   return formatHomeAssistantGlance(countLightsOn(states))
 }
+
+export const homeAssistantAdapter = apiKeyAdapter('home-assistant', fetchHomeAssistantGlance)

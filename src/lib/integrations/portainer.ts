@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
 }
@@ -138,3 +140,5 @@ export async function fetchPortainerGlance(
 
   return formatPortainerGlance(counts)
 }
+
+export const portainerAdapter = apiKeyAdapter('portainer', fetchPortainerGlance)

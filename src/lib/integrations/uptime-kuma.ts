@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 export function metricsUrl(serviceUrl: string): string {
   return `${serviceUrl.replace(/\/$/, '')}/metrics`
 }
@@ -60,3 +62,5 @@ export async function fetchUptimeKumaGlance(
   const body = await response.text()
   return formatUptimeKumaGlance(parseUptimeKumaMetrics(body))
 }
+
+export const uptimeKumaAdapter = apiKeyAdapter('uptime-kuma', fetchUptimeKumaGlance)

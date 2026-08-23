@@ -47,7 +47,21 @@ describe('/api/config', () => {
     const { GET, PUT } = await import('./route')
 
     const initial = await (await GET()).json()
-    const updated = { ...initial, gridOrder: ['service-a'] }
+    const updated = {
+      ...initial,
+      services: [
+        {
+          id: 'service-a',
+          catalogId: null,
+          name: 'Service A',
+          url: 'http://a',
+          logo: '',
+          tags: [],
+          integration: null,
+        },
+      ],
+      gridOrder: ['service-a'],
+    }
 
     const putResponse = await PUT(
       new Request('http://localhost/api/config', {

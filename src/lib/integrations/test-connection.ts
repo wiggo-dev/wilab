@@ -3,19 +3,11 @@ import { fetchGlance, isSupportedIntegration } from './registry'
 import type { ServiceIntegration } from './types'
 import { UPSTREAM_TIMEOUT_MS } from './types'
 import { upstreamFetch } from './upstream-fetch'
+import { withUpstreamTimeout } from './upstream-timeout'
 
 export type IntegrationTestResult =
   | { ok: true; text: string }
   | { ok: false; error: string }
-
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error('Connection timed out')), timeoutMs)
-    }),
-  ])
-}
 
 export async function testIntegrationConnection(
   url: string,
@@ -37,9 +29,10 @@ export async function testIntegrationConnection(
   }
 
   try {
-    const text = await withTimeout(
+    const text = await withUpstreamTimeout(
       fetchGlance(service, integration, fetchImpl),
       UPSTREAM_TIMEOUT_MS,
+      'Connection timed out',
     )
     return { ok: true, text }
   } catch (error) {

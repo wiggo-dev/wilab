@@ -1,10 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import type { WilabConfig } from '@/lib/config/types'
-import {
-  aggregateLiveGlances,
-  getLiveGlances,
-  resetLiveState,
-} from './live'
+import { GlanceEngine } from './glance-engine'
 import { LIVE_COALESCE_MS, STALE_THRESHOLD_MS } from './types'
 
 const baseConfig: WilabConfig = {
@@ -35,17 +31,22 @@ const baseConfig: WilabConfig = {
   activeSearchProviderId: 'ddg',
 }
 
-describe('live aggregation', () => {
+describe('GlanceEngine', () => {
   const fetchMock = vi.fn()
+  let now = 0
 
   beforeEach(() => {
-    resetLiveState()
     fetchMock.mockReset()
+    now = 0
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
+
+  function engine() {
+    return new GlanceEngine({ fetch: fetchMock, now: () => now })
+  }
 
   it('returns per-service results and isolates upstream failures', async () => {
     fetchMock.mockImplementation(async (url: string) => {
@@ -58,7 +59,8 @@ describe('live aggregation', () => {
       return { ok: false, status: 500, text: async () => '' }
     })
 
-    const response = await aggregateLiveGlances(baseConfig, fetchMock, 1_000)
+    now = 1_000
+    const response = await engine().aggregate(baseConfig)
 
     expect(response.services['svc-kuma']).toEqual({ status: 'healthy', text: '1/2 up' })
     expect(response.services['svc-broken']).toEqual({ status: 'unavailable', text: 'Unavailable' })
@@ -70,8 +72,11 @@ describe('live aggregation', () => {
       text: async () => 'monitor_status{monitor_id="1"} 1\n',
     })
 
-    await getLiveGlances(baseConfig, fetchMock, 10_000)
-    await getLiveGlances(baseConfig, fetchMock, 10_000 + LIVE_COALESCE_MS - 1)
+    const glances = engine()
+    now = 10_000
+    await glances.get(baseConfig)
+    now = 10_000 + LIVE_COALESCE_MS - 1
+    await glances.get(baseConfig)
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
@@ -82,10 +87,13 @@ describe('live aggregation', () => {
       text: async () => 'monitor_status{monitor_id="1"} 1\n',
     })
 
-    await getLiveGlances(baseConfig, fetchMock, 0)
+    const glances = engine()
+    now = 0
+    await glances.get(baseConfig)
     fetchMock.mockRejectedValue(new Error('down'))
 
-    const aged = await getLiveGlances(baseConfig, fetchMock, STALE_THRESHOLD_MS + 1_000)
+    now = STALE_THRESHOLD_MS + 1_000
+    const aged = await glances.get(baseConfig)
 
     expect(aged.services['svc-kuma'].status).toBe('stale')
     expect(aged.services['svc-kuma'].text).toBe('1/1 up')

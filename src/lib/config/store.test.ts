@@ -35,6 +35,17 @@ describe('ConfigStore', () => {
 
   it('persists updates via atomic write-rename', async () => {
     const config = await store.load()
+    config.services = [
+      {
+        id: 'svc-1',
+        catalogId: null,
+        name: 'One',
+        url: 'http://one',
+        logo: '',
+        tags: [],
+        integration: null,
+      },
+    ]
     config.gridOrder = ['svc-1']
 
     await store.save(config)
@@ -69,8 +80,41 @@ describe('ConfigStore', () => {
     await writeFile(join(dataDir, 'config.json.tmp'), JSON.stringify(promoted), 'utf8')
 
     const config = await store.load()
-    expect(config.gridOrder).toEqual(['from-tmp'])
-    expect(await readFile(join(dataDir, 'config.json'), 'utf8')).toBe(JSON.stringify(promoted))
+    expect(config.gridOrder).toEqual([])
+    expect(JSON.parse(await readFile(join(dataDir, 'config.json'), 'utf8')).gridOrder).toEqual([])
+  })
+
+  it('heals orphan gridOrder ids on load and rewrites disk', async () => {
+    await writeFile(
+      join(dataDir, 'config.json'),
+      JSON.stringify({
+        schemaVersion: 1,
+        services: [
+          {
+            id: 'svc-1',
+            catalogId: null,
+            name: 'One',
+            url: 'http://one',
+            logo: '',
+            tags: [],
+            integration: null,
+          },
+        ],
+        gridOrder: ['svc-1', 'ghost'],
+        pinnedOrder: ['ghost'],
+        searchProviders: DEFAULT_SEARCH_PROVIDERS,
+        activeSearchProviderId: 'ddg',
+      }),
+      'utf8',
+    )
+
+    const config = await store.load()
+    expect(config.gridOrder).toEqual(['svc-1'])
+    expect(config.pinnedOrder).toEqual([])
+
+    const onDisk = JSON.parse(await readFile(join(dataDir, 'config.json'), 'utf8'))
+    expect(onDisk.gridOrder).toEqual(['svc-1'])
+    expect(onDisk.pinnedOrder).toEqual([])
   })
 })
 

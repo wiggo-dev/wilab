@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
 }
@@ -72,3 +74,5 @@ export async function fetchProwlarrGlance(
 
   return formatProwlarrGlance({ health, indexers })
 }
+
+export const prowlarrAdapter = apiKeyAdapter('prowlarr', fetchProwlarrGlance)

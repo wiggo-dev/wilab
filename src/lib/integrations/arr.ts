@@ -1,3 +1,5 @@
+import { apiKeyAdapter } from './adapter'
+
 function apiBase(serviceUrl: string): string {
   return serviceUrl.replace(/\/$/, '')
 }
@@ -69,3 +71,6 @@ export async function fetchArrGlance(
     missing: missing.totalRecords ?? 0,
   })
 }
+
+export const sonarrAdapter = apiKeyAdapter('sonarr', fetchArrGlance)
+export const radarrAdapter = apiKeyAdapter('radarr', fetchArrGlance)
