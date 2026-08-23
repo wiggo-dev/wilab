@@ -43,14 +43,49 @@ Run wilab on your LAN and put nginx, Caddy, or Traefik in front for TLS. wilab h
 
 ## Container image (GHCR)
 
-Pre-built images are published to GitHub Container Registry on each push to `main` and on release tags:
+Images are published **only on GitHub Releases** (semver tags like `v0.1.0`), not on every `main` commit:
 
 ```bash
-docker pull ghcr.io/wiggo-dev/wilab:latest
-# or a release tag, e.g. ghcr.io/wiggo-dev/wilab:0.1.0
+docker pull ghcr.io/wiggo-dev/wilab:latest   # newest release
+docker pull ghcr.io/wiggo-dev/wilab:0.1.0    # exact version
+docker pull ghcr.io/wiggo-dev/wilab:0.1      # latest 0.1.x patch
 ```
 
 The package must be **public** in GitHub (Packages → wilab → Package settings) for anonymous pulls.
+
+## Versioning and releases
+
+wilab uses [semantic versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). The source of truth for a release is a **git tag** `vX.Y.Z`.
+
+| Change | Bump |
+|--------|------|
+| Breaking config/API or compose contract | MAJOR |
+| New integration or user-facing feature | MINOR |
+| Bug fix / polish | PATCH |
+
+### Cut a release
+
+From `main`, with a clean tree:
+
+```bash
+# 1. Bump package.json version to match (e.g. 0.1.0 → 0.2.0)
+# 2. Commit if needed, then:
+git tag -a v0.2.0 -m "wilab v0.2.0"
+git push origin v0.2.0
+```
+
+That triggers CI to:
+
+1. Build and push `ghcr.io/wiggo-dev/wilab:{version}`, `{major}.{minor}`, and `latest`
+2. Create a GitHub Release with auto-generated notes
+
+Or with the GitHub CLI (creates the tag + release; the tag push still runs the Docker job):
+
+```bash
+gh release create v0.2.0 --generate-notes --latest
+```
+
+Upgrades on a host: `docker compose pull && docker compose up -d`.
 
 ## Development
 
