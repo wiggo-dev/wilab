@@ -11,3 +11,7 @@ Canonical names: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-hum
 ### Domain docs
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### E2E tests
+
+Browser smoke tests live in `e2e/` and run with `pnpm test:e2e`. Playwright starts `next dev` on port 3000 with an isolated temp `WILAB_DATA_DIR`. First run may require `pnpm exec playwright install chromium`.
