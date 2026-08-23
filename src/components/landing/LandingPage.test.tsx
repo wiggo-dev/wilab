@@ -64,7 +64,12 @@ describe('LandingPage', () => {
   })
 
   it('adds from catalog and opens the edit dialog with defaults', async () => {
-    fetchMock.mockResolvedValue({ ok: true })
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/live') {
+        return { ok: true, json: async () => ({ services: {} }) }
+      }
+      return { ok: true }
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     const emptyConfig = resolveConfigForDisplay({
@@ -83,8 +88,12 @@ describe('LandingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Sonarr/i }))
 
     await waitFor(() => expect(screen.getByDisplayValue('http://{host}:8989')).toBeTruthy())
-    expect(fetchMock).toHaveBeenCalled()
-    const saved = JSON.parse(String(fetchMock.mock.calls[0][1]?.body))
+
+    const configPut = fetchMock.mock.calls.find(
+      ([url, init]) => url === '/api/config' && (init as RequestInit | undefined)?.method === 'PUT',
+    )
+    expect(configPut).toBeTruthy()
+    const saved = JSON.parse(String((configPut?.[1] as RequestInit).body))
     expect(saved.services).toHaveLength(1)
     expect(saved.services[0].catalogId).toBe('sonarr')
   })

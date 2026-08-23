@@ -78,7 +78,7 @@ export function useWilabConfig(initialConfig: WilabConfig) {
   )
 
   const saveService = useCallback(
-    async (id: string, patch: Partial<Pick<Service, 'name' | 'url' | 'logo' | 'tags'>>) => {
+    async (id: string, patch: Partial<Pick<Service, 'name' | 'url' | 'logo' | 'tags' | 'integration'>>) => {
       await flushImmediate(updateService(configRef.current, id, patch))
     },
     [flushImmediate],

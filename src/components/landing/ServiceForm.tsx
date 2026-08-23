@@ -10,13 +10,16 @@ export function ServiceForm({
   onRemove,
 }: {
   service: DisplayService
-  onSave: (patch: Pick<DisplayService, 'name' | 'url' | 'logo' | 'tags'>) => void | Promise<void>
+  onSave: (
+    patch: Pick<DisplayService, 'name' | 'url' | 'logo' | 'tags' | 'integration'>,
+  ) => void | Promise<void>
   onRemove: () => void | Promise<void>
 }) {
   const [name, setName] = useState(service.name)
   const [url, setUrl] = useState(service.url)
   const [logo, setLogo] = useState(service.logo)
   const [tags, setTags] = useState(service.tags.join(', '))
+  const [apiKey, setApiKey] = useState(service.integration?.apiKey ?? '')
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -25,6 +28,7 @@ export function ServiceForm({
       url,
       logo,
       tags: parseTagsInput(tags),
+      integration: service.integration ? { ...service.integration, apiKey } : null,
     })
   }
 
@@ -65,6 +69,17 @@ export function ServiceForm({
           onChange={(event) => setTags(event.target.value)}
         />
       </label>
+      {service.integration && (
+        <label className="text-sm">
+          {service.integration.kind} API key
+          <input
+            className="mt-1 w-full rounded-lg bg-white/10 px-3 py-2"
+            value={apiKey}
+            onChange={(event) => setApiKey(event.target.value)}
+            placeholder="API key"
+          />
+        </label>
+      )}
       <div className="mt-2 flex justify-between">
         <button type="button" className="text-sm text-rose-300" onClick={() => void onRemove()}>
           Remove

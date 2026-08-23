@@ -2,6 +2,7 @@
 
 import type { DragEvent } from 'react'
 import type { DisplayService } from '@/lib/config/types'
+import type { GlanceResult } from '@/lib/integrations/types'
 import { tagClass } from '@/lib/ui/tag-colors'
 
 export function ServiceLogo({
@@ -35,6 +36,7 @@ export function ServiceTile({
   onEdit,
   onTogglePin,
   onReorder,
+  glance,
 }: {
   service: DisplayService
   compact?: boolean
@@ -46,6 +48,7 @@ export function ServiceTile({
   onEdit?: () => void
   onTogglePin?: () => void
   onReorder?: (draggedId: string) => void
+  glance?: GlanceResult
 }) {
   function onDragStart(event: DragEvent) {
     event.dataTransfer.setData('text/plain', JSON.stringify({ zone, id: service.id }))
@@ -64,6 +67,17 @@ export function ServiceTile({
     <>
       <ServiceLogo service={service} className={compact ? 'h-7 w-7' : 'h-10 w-10'} />
       <div className={`truncate ${compact ? 'mt-1 text-[11px]' : 'mt-1.5 text-xs'}`}>{service.name}</div>
+      {glance && (
+        <div
+          className={`mt-1 max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] ${
+            glance.status === 'unavailable'
+              ? 'bg-amber-400/20 text-amber-200'
+              : 'bg-emerald-400/20 text-emerald-200'
+          } ${glance.status === 'stale' ? 'opacity-50' : ''}`}
+        >
+          {glance.text}
+        </div>
+      )}
     </>
   )
 
@@ -75,11 +89,15 @@ export function ServiceTile({
       onDrop={onDrop}
       className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 ${compact ? 'h-32 w-28 justify-between' : 'aspect-square justify-center'} ${zone === 'pinned' ? 'ring-sky-400/40' : 'ring-white/10'} ${editMode ? 'cursor-grab' : ''}`}
     >
-      {editMode && onTogglePin && (
+      {onTogglePin && (
         <button
           type="button"
-          className={`absolute top-2 left-2 text-sm ${pinned ? 'text-amber-300' : 'hidden text-slate-400 group-hover:block'}`}
-          onClick={onTogglePin}
+          className={`absolute top-2 left-2 z-10 text-sm ${pinned ? 'text-amber-300' : 'hidden text-slate-400 group-hover:block'}`}
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onTogglePin()
+          }}
           aria-label={pinned ? 'Unpin' : 'Pin'}
         >
           ★

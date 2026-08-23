@@ -1,4 +1,5 @@
 import type { CatalogEntry } from '@/lib/catalog/types'
+import { createIntegration } from '@/lib/integrations/registry'
 import type { SearchProvider, Service, WilabConfig } from './types'
 
 export function moveId(order: string[], id: string, beforeId: string | null): string[] {
@@ -19,7 +20,7 @@ export function createServiceFromCatalog(entry: CatalogEntry, id: string): Servi
     url: entry.defaultUrl,
     logo: entry.logo,
     tags: [],
-    integration: entry.integration ? { kind: entry.integration } : null,
+    integration: entry.integration ? createIntegration(entry.integration) : null,
   }
 }
 
@@ -64,7 +65,7 @@ export function addServiceFromCatalog(
 export function updateService(
   config: WilabConfig,
   id: string,
-  patch: Partial<Pick<Service, 'name' | 'url' | 'logo' | 'tags'>>,
+  patch: Partial<Pick<Service, 'name' | 'url' | 'logo' | 'tags' | 'integration'>>,
 ): WilabConfig {
   return {
     ...config,

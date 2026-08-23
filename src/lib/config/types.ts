@@ -13,7 +13,7 @@ export type Service = {
   url: string
   logo: string
   tags: string[]
-  integration: null | { kind: string }
+  integration: null | { kind: string; apiKey: string }
 }
 
 export type WilabConfig = {

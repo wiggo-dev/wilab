@@ -41,7 +41,7 @@ describe('config mutations', () => {
       name: 'Sonarr',
       url: 'http://{host}:8989',
       logo: '/catalog/icons/sonarr.svg',
-      integration: { kind: 'sonarr' },
+      integration: { kind: 'sonarr', apiKey: '' },
     })
   })
 

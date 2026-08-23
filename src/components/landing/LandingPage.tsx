@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { CatalogEntry } from '@/lib/catalog/types'
 import type { WilabConfig } from '@/lib/config/types'
 import { useWilabConfig } from '@/hooks/useWilabConfig'
+import { useLiveGlances } from '@/hooks/useLiveGlances'
 import { allTags, buildSearchUrl, gridServices, pinnedServices } from '@/lib/landing/view-model'
 import { CatalogPicker } from './CatalogPicker'
 import { CustomServiceForm } from './CustomServiceForm'
@@ -41,6 +42,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     saveSearchProvider,
     createSearchProvider,
   } = useWilabConfig(initialConfig)
+  const { glances, loaded } = useLiveGlances()
 
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -155,6 +157,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                 onEdit={() => setDialog({ kind: 'edit', id: service.id })}
                 onTogglePin={() => void pinService(service.id)}
                 onReorder={(draggedId) => dragReorderPinned(draggedId, service.id)}
+                glance={loaded ? glances[service.id] : undefined}
               />
             ))}
           </div>
@@ -174,6 +177,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                 onEdit={() => setDialog({ kind: 'edit', id: service.id })}
                 onTogglePin={() => void pinService(service.id)}
                 onReorder={(draggedId) => dragReorderGrid(draggedId, service.id)}
+                glance={loaded ? glances[service.id] : undefined}
               />
             ))}
             {editMode && (
