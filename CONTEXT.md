@@ -20,8 +20,12 @@ _Avoid_: App definition
 A service the user defines from scratch — not drawn from the catalog — with a user-supplied name, URL, and logo.
 
 **Integration**:
-The per-service client that fetches live information (via API key or login credentials) and the extra data it displays. A service may have zero or one integration.
+The per-service client that fetches live information (via API key or login credentials) and produces a Glance. A service may have zero or one integration.
 _Avoid_: Enhanced app (Heimdall's term), widget, plugin
+
+**Glance**:
+The Integration's current badge outcome for a Service — a healthy display string, a stale last-known string, or unavailable — produced server-side for the tile.
+_Avoid_: Badge data, live status, widget state
 
 **Pinned section**:
 A drag-orderable area at the top of the page holding services the user has pinned. Pinning is emphasis, not relocation: a pinned service also keeps its place in the main grid.
