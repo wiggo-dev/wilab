@@ -1,19 +1,50 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import type { CatalogEntry } from '@/lib/catalog/types'
 import type { WilabConfig } from '@/lib/config/types'
+import { useWilabConfig } from '@/hooks/useWilabConfig'
 import { allTags, buildSearchUrl, gridServices, pinnedServices } from '@/lib/landing/view-model'
+import { CatalogPicker } from './CatalogPicker'
+import { CustomServiceForm } from './CustomServiceForm'
+import { Modal } from './Modal'
+import { SearchProviderDialog } from './SearchProviderDialog'
+import { ServiceForm } from './ServiceForm'
 import { ServiceTile } from './ServiceTile'
 import { TagChip } from './TagChip'
 
+type DialogState =
+  | { kind: 'none' }
+  | { kind: 'edit'; id: string }
+  | { kind: 'add' }
+  | { kind: 'custom' }
+  | { kind: 'search-providers' }
+
 type LandingPageProps = {
   config: WilabConfig
+  catalog: CatalogEntry[]
 }
 
-export function LandingPage({ config }: LandingPageProps) {
+export function LandingPage({ config: initialConfig, catalog }: LandingPageProps) {
+  const {
+    config,
+    editMode,
+    setEditMode,
+    addFromCatalog,
+    saveCustomService,
+    saveService,
+    deleteService,
+    pinService,
+    dragReorderGrid,
+    dragReorderPinned,
+    changeActiveSearchProvider,
+    saveSearchProvider,
+    createSearchProvider,
+  } = useWilabConfig(initialConfig)
+
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchProviderId, setSearchProviderId] = useState(config.activeSearchProviderId)
+  const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
 
   const tags = useMemo(() => allTags(config.services), [config.services])
   const pinned = useMemo(
@@ -25,18 +56,24 @@ export function LandingPage({ config }: LandingPageProps) {
     [activeTag, config.gridOrder, config.services],
   )
 
+  const editingService =
+    dialog.kind === 'edit' ? config.services.find((service) => service.id === dialog.id) : null
+
   function toggleTag(tag: string) {
     setActiveTag((current) => (current === tag ? null : tag))
   }
 
   function submitSearch() {
-    const provider = config.searchProviders.find((entry) => entry.id === searchProviderId)
+    const provider = config.searchProviders.find((entry) => entry.id === config.activeSearchProviderId)
     if (!provider) return
-
     const url = buildSearchUrl(provider.template, searchQuery)
     if (!url) return
-
     window.open(url, '_blank', 'noopener')
+  }
+
+  async function pickCatalogEntry(entry: CatalogEntry) {
+    const serviceId = await addFromCatalog(entry)
+    setDialog({ kind: 'edit', id: serviceId })
   }
 
   return (
@@ -54,8 +91,8 @@ export function LandingPage({ config }: LandingPageProps) {
           >
             <select
               className="bg-transparent px-3 text-sm outline-none"
-              value={searchProviderId}
-              onChange={(event) => setSearchProviderId(event.target.value)}
+              value={config.activeSearchProviderId}
+              onChange={(event) => void changeActiveSearchProvider(event.target.value)}
               aria-label="Search provider"
             >
               {config.searchProviders.map((provider) => (
@@ -72,18 +109,29 @@ export function LandingPage({ config }: LandingPageProps) {
               aria-label="Search query"
             />
           </form>
+          {editMode && (
+            <button
+              type="button"
+              className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20"
+              onClick={() => setDialog({ kind: 'search-providers' })}
+            >
+              Search providers
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setEditMode((current) => !current)}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-sm ${editMode ? 'bg-amber-400 text-black' : 'bg-white/10 hover:bg-white/20'}`}
+          >
+            {editMode ? 'Done' : 'Edit'}
+          </button>
         </div>
         <div className="mx-auto flex max-w-5xl flex-wrap gap-1.5 px-6 pb-2">
           <TagChip active={activeTag == null} onClick={() => setActiveTag(null)}>
             All
           </TagChip>
           {tags.map((tag) => (
-            <TagChip
-              key={tag}
-              tag={tag}
-              active={activeTag === tag}
-              onClick={() => toggleTag(tag)}
-            >
+            <TagChip key={tag} tag={tag} active={activeTag === tag} onClick={() => toggleTag(tag)}>
               {tag}
             </TagChip>
           ))}
@@ -101,7 +149,12 @@ export function LandingPage({ config }: LandingPageProps) {
                 compact
                 zone="pinned"
                 activeTag={activeTag}
+                editMode={editMode}
+                pinned
                 onTagClick={toggleTag}
+                onEdit={() => setDialog({ kind: 'edit', id: service.id })}
+                onTogglePin={() => void pinService(service.id)}
+                onReorder={(draggedId) => dragReorderPinned(draggedId, service.id)}
               />
             ))}
           </div>
@@ -115,12 +168,78 @@ export function LandingPage({ config }: LandingPageProps) {
                 service={service}
                 zone="grid"
                 activeTag={activeTag}
+                editMode={editMode}
+                pinned={config.pinnedOrder.includes(service.id)}
                 onTagClick={toggleTag}
+                onEdit={() => setDialog({ kind: 'edit', id: service.id })}
+                onTogglePin={() => void pinService(service.id)}
+                onReorder={(draggedId) => dragReorderGrid(draggedId, service.id)}
               />
             ))}
+            {editMode && (
+              <button
+                type="button"
+                aria-label="Add service"
+                onClick={() => setDialog({ kind: 'add' })}
+                className="flex aspect-square flex-col items-center justify-center rounded-2xl border border-dashed border-white/25 text-slate-400 hover:bg-white/5"
+              >
+                <span className="text-3xl">+</span>
+                <span className="text-xs">Add</span>
+              </button>
+            )}
           </div>
         </section>
       </main>
+
+      {dialog.kind === 'edit' && editingService && (
+        <Modal title={`Edit ${editingService.name}`} onClose={() => setDialog({ kind: 'none' })}>
+          <ServiceForm
+            service={editingService}
+            onSave={async (patch) => {
+              await saveService(editingService.id, patch)
+              setDialog({ kind: 'none' })
+            }}
+            onRemove={async () => {
+              await deleteService(editingService.id)
+              setDialog({ kind: 'none' })
+            }}
+          />
+        </Modal>
+      )}
+
+      {dialog.kind === 'add' && (
+        <Modal title="Add a service" onClose={() => setDialog({ kind: 'none' })}>
+          <CatalogPicker
+            catalog={catalog}
+            services={config.services}
+            onPick={(entry) => void pickCatalogEntry(entry)}
+            onCustom={() => setDialog({ kind: 'custom' })}
+          />
+        </Modal>
+      )}
+
+      {dialog.kind === 'custom' && (
+        <Modal title="Custom service" onClose={() => setDialog({ kind: 'none' })}>
+          <CustomServiceForm
+            onSave={async (input) => {
+              await saveCustomService(input)
+              setDialog({ kind: 'none' })
+            }}
+          />
+        </Modal>
+      )}
+
+      {dialog.kind === 'search-providers' && (
+        <Modal title="Search providers" onClose={() => setDialog({ kind: 'none' })}>
+          <SearchProviderDialog
+            providers={config.searchProviders}
+            activeProviderId={config.activeSearchProviderId}
+            onSave={saveSearchProvider}
+            onAdd={createSearchProvider}
+            onSetActive={changeActiveSearchProvider}
+          />
+        </Modal>
+      )}
     </div>
   )
 }
