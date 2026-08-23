@@ -48,7 +48,7 @@ const entries: CatalogEntry[] = [
     name: 'Prowlarr',
     defaultUrl: 'http://{host}:9696',
     logo: '',
-    integration: null,
+    integration: 'prowlarr',
   },
   {
     id: 'portainer',
