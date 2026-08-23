@@ -26,6 +26,9 @@ export type IntegrationKind =
   | 'sabnzbd'
   | 'portainer'
   | 'uptime-kuma'
+  | 'prowlarr'
+  | 'immich'
+  | 'zigbee2mqtt'
 
 export type CatalogEntry = {
   id: CatalogEntryId

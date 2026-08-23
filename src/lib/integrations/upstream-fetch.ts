@@ -53,11 +53,18 @@ function requestUrl(
 }
 
 /** Server-side fetch for homelab upstreams; tolerates self-signed HTTPS certs. */
-export async function upstreamFetch(input: string | URL, init?: RequestInit): Promise<Response> {
-  const url = input instanceof URL ? input : new URL(input)
+export async function upstreamFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const url =
+    input instanceof URL
+      ? input
+      : typeof input === 'string'
+        ? new URL(input)
+        : new URL(input.url)
 
   if (url.protocol === 'https:') {
-    return requestUrl(url, init, false)
+    const method = init?.method ?? (input instanceof Request ? input.method : 'GET')
+    const headers = init?.headers ?? (input instanceof Request ? input.headers : undefined)
+    return requestUrl(url, { ...init, method, headers }, false)
   }
 
   return fetch(input, init)
