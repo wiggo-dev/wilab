@@ -12,10 +12,7 @@ import { createServiceFromCatalog } from '@/lib/config/mutations'
 import type { Service, WilabConfig } from '@/lib/config/types'
 import { useWilabConfig } from '@/hooks/useWilabConfig'
 import { useLiveGlances } from '@/hooks/useLiveGlances'
-import {
-  type DragPreviewState,
-  shouldShowDropSlot,
-} from '@/lib/landing/drag-preview'
+import { useReorderDrag } from '@/hooks/useReorderDrag'
 import { allTags, buildSearchUrl, gridServices, pinnedServices } from '@/lib/landing/view-model'
 import { CatalogPicker } from './CatalogPicker'
 import { CustomServiceForm } from './CustomServiceForm'
@@ -95,19 +92,27 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const [searchQuery, setSearchQuery] = useState('')
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
   const [importError, setImportError] = useState<string | null>(null)
-  const [drag, setDrag] = useState<DragPreviewState | null>(null)
-  const dragRef = useRef<DragPreviewState | null>(null)
-  const didDropRef = useRef(false)
   const importInputRef = useRef<HTMLInputElement>(null)
+
+  const pinnedDrag = useReorderDrag({
+    zone: 'pinned',
+    order: config.pinnedOrder,
+    onCommit: dragReorderPinned,
+  })
+  const gridDrag = useReorderDrag({
+    zone: 'grid',
+    order: config.gridOrder,
+    onCommit: dragReorderGrid,
+  })
 
   const tags = useMemo(() => allTags(config.services), [config.services])
   const pinned = useMemo(
-    () => pinnedServices(config.services, config.pinnedOrder),
-    [config.pinnedOrder, config.services],
+    () => pinnedServices(config.services, pinnedDrag.displayOrder),
+    [config.services, pinnedDrag.displayOrder],
   )
   const grid = useMemo(
-    () => gridServices(config.services, config.gridOrder, activeTag),
-    [activeTag, config.gridOrder, config.services],
+    () => gridServices(config.services, gridDrag.displayOrder, activeTag),
+    [activeTag, config.services, gridDrag.displayOrder],
   )
 
   const editingService =
@@ -194,46 +199,6 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     await replaceConfig(dialog.config)
     setImportError(null)
     closeDialog()
-  }
-
-  function setDragState(next: DragPreviewState | null) {
-    dragRef.current = next
-    setDrag(next)
-  }
-
-  function onDragBegin(zone: 'grid' | 'pinned', id: string) {
-    didDropRef.current = false
-    setDragState({ zone, draggedId: id, overId: id })
-  }
-
-  function onDragHover(zone: 'grid' | 'pinned', id: string) {
-    const current = dragRef.current
-    if (!current || current.zone !== zone) return
-    if (current.overId === id) return
-    setDragState({ ...current, overId: id })
-  }
-
-  function commitDrag() {
-    const current = dragRef.current
-    if (!current?.overId || current.draggedId === current.overId) {
-      setDragState(null)
-      return
-    }
-
-    didDropRef.current = true
-    if (current.zone === 'grid') {
-      dragReorderGrid(current.draggedId, current.overId)
-    } else {
-      dragReorderPinned(current.draggedId, current.overId)
-    }
-    setDragState(null)
-  }
-
-  function onDragEnd() {
-    if (!didDropRef.current) {
-      setDragState(null)
-    }
-    didDropRef.current = false
   }
 
   async function confirmDelete() {
@@ -340,12 +305,12 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           <div className="flex flex-wrap gap-2">
             {pinned.map((service) => (
               <div key={service.id} className="contents">
-                {shouldShowDropSlot(drag, 'pinned', service.id) && (
+                {pinnedDrag.isDropTarget(service.id) && (
                   <DropSlot
                     compact
                     beforeId={service.id}
-                    onHover={(beforeId) => onDragHover('pinned', beforeId)}
-                    onDropCommit={commitDrag}
+                    onHover={(beforeId) => pinnedDrag.hover(beforeId)}
+                    onDropCommit={pinnedDrag.dropCommit}
                   />
                 )}
                 <ServiceTile
@@ -355,16 +320,16 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                   activeTag={activeTag}
                   editMode={editMode}
                   pinned
-                  isDragging={drag?.zone === 'pinned' && drag.draggedId === service.id}
-                  isDropTarget={shouldShowDropSlot(drag, 'pinned', service.id)}
+                  isDragging={pinnedDrag.isDragging(service.id)}
+                  isDropTarget={pinnedDrag.isDropTarget(service.id)}
                   onTagClick={toggleTag}
                   onEdit={() => setDialog({ kind: 'edit', id: service.id })}
                   onTogglePin={() => void pinService(service.id)}
                   onDelete={() => setDialog({ kind: 'confirm-delete', id: service.id })}
-                  onDragBegin={onDragBegin}
-                  onDragHover={onDragHover}
-                  onDragEnd={onDragEnd}
-                  onDropCommit={commitDrag}
+                  onDragBegin={(_zone, id) => pinnedDrag.begin(id)}
+                  onDragHover={(_zone, id) => pinnedDrag.hover(id)}
+                  onDragEnd={pinnedDrag.end}
+                  onDropCommit={pinnedDrag.dropCommit}
                   glance={loaded ? glances[service.id] : undefined}
                 />
               </div>
@@ -376,11 +341,11 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {grid.map((service) => (
               <div key={service.id} className="contents">
-                {shouldShowDropSlot(drag, 'grid', service.id) && (
+                {gridDrag.isDropTarget(service.id) && (
                   <DropSlot
                     beforeId={service.id}
-                    onHover={(beforeId) => onDragHover('grid', beforeId)}
-                    onDropCommit={commitDrag}
+                    onHover={(beforeId) => gridDrag.hover(beforeId)}
+                    onDropCommit={gridDrag.dropCommit}
                   />
                 )}
                 <ServiceTile
@@ -389,16 +354,16 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                   activeTag={activeTag}
                   editMode={editMode}
                   pinned={config.pinnedOrder.includes(service.id)}
-                  isDragging={drag?.zone === 'grid' && drag.draggedId === service.id}
-                  isDropTarget={shouldShowDropSlot(drag, 'grid', service.id)}
+                  isDragging={gridDrag.isDragging(service.id)}
+                  isDropTarget={gridDrag.isDropTarget(service.id)}
                   onTagClick={toggleTag}
                   onEdit={() => setDialog({ kind: 'edit', id: service.id })}
                   onTogglePin={() => void pinService(service.id)}
                   onDelete={() => setDialog({ kind: 'confirm-delete', id: service.id })}
-                  onDragBegin={onDragBegin}
-                  onDragHover={onDragHover}
-                  onDragEnd={onDragEnd}
-                  onDropCommit={commitDrag}
+                  onDragBegin={(_zone, id) => gridDrag.begin(id)}
+                  onDragHover={(_zone, id) => gridDrag.hover(id)}
+                  onDragEnd={gridDrag.end}
+                  onDropCommit={gridDrag.dropCommit}
                   glance={loaded ? glances[service.id] : undefined}
                 />
               </div>
