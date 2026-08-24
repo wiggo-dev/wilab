@@ -5,6 +5,8 @@ import { UPSTREAM_TIMEOUT_MS } from './types'
 export type ZigbeeDevice = {
   friendly_name?: string
   disabled?: boolean
+  /** Present on bridge/devices; Coordinator is the stick, not a mesh client. */
+  type?: string
 }
 
 type ZigbeeMessage = {
@@ -45,11 +47,19 @@ export function isOnlineAvailability(payload: unknown): boolean {
   return false
 }
 
+export function isCountableZigbeeDevice(device: ZigbeeDevice): boolean {
+  // Match the Z2M frontend: bridge/devices includes the coordinator, but
+  // dashboard "N of M online" counts only routers and end devices.
+  if (device.type === 'Coordinator') return false
+  if (device.disabled) return false
+  return true
+}
+
 export function countDeviceAvailability(
   devices: ZigbeeDevice[],
   availabilityByName: Map<string, boolean>,
 ): { online: number; total: number } {
-  const active = devices.filter((device) => !device.disabled)
+  const active = devices.filter(isCountableZigbeeDevice)
   let online = 0
 
   for (const device of active) {

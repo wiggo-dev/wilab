@@ -46,6 +46,22 @@ describe('zigbee2mqtt integration', () => {
     expect(formatZigbee2MqttGlance({ online: 0, total: 0 })).toBe('0 of 0 online')
   })
 
+  it('excludes the Coordinator from online/total like the Z2M dashboard', () => {
+    const devices = [
+      { friendly_name: 'Coordinator', type: 'Coordinator', disabled: false },
+      { friendly_name: 'plug', type: 'Router', disabled: false },
+      { friendly_name: 'sensor', type: 'EndDevice', disabled: false },
+    ]
+    const availability = new Map([
+      ['Coordinator', true],
+      ['plug', true],
+      ['sensor', true],
+    ])
+
+    // Without excluding Coordinator this would be 3 of 3 — dashboard shows 2 of 2.
+    expect(countDeviceAvailability(devices, availability)).toEqual({ online: 2, total: 2 })
+  })
+
   it('collects devices and availability from websocket messages', async () => {
     class MockWebSocket extends EventEmitter {
       static lastUrl: string | undefined
