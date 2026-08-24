@@ -140,6 +140,13 @@ export function useWilabConfig(initialConfig: WilabConfig) {
     [flushImmediate],
   )
 
+  const replaceConfig = useCallback(
+    async (next: WilabConfig) => {
+      await flushImmediate(next)
+    },
+    [flushImmediate],
+  )
+
   return {
     config: displayConfig,
     rawConfig: config,
@@ -156,5 +163,6 @@ export function useWilabConfig(initialConfig: WilabConfig) {
     changeActiveSearchProvider,
     saveSearchProvider,
     createSearchProvider,
+    replaceConfig,
   }
 }

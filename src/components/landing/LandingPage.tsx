@@ -1,8 +1,13 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { DragEvent } from 'react'
+import type { ChangeEvent, DragEvent } from 'react'
 import type { CatalogEntry } from '@/lib/catalog/types'
+import {
+  configExportJson,
+  parseConfigImport,
+  summarizeConfigImport,
+} from '@/lib/config/import'
 import { createServiceFromCatalog } from '@/lib/config/mutations'
 import type { Service, WilabConfig } from '@/lib/config/types'
 import { useWilabConfig } from '@/hooks/useWilabConfig'
@@ -28,6 +33,7 @@ type DialogState =
   | { kind: 'custom' }
   | { kind: 'search-providers' }
   | { kind: 'confirm-delete'; id: string }
+  | { kind: 'confirm-import'; config: WilabConfig }
 
 type LandingPageProps = {
   config: WilabConfig
@@ -65,6 +71,7 @@ function DropSlot({
 export function LandingPage({ config: initialConfig, catalog }: LandingPageProps) {
   const {
     config,
+    rawConfig,
     editMode,
     setEditMode,
     saveNewService,
@@ -77,6 +84,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     changeActiveSearchProvider,
     saveSearchProvider,
     createSearchProvider,
+    replaceConfig,
   } = useWilabConfig(initialConfig)
   const glanceRefreshKey = config.services
     .map((service) => `${service.id}:${JSON.stringify(service.integration)}:${service.url}`)
@@ -86,9 +94,11 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
+  const [importError, setImportError] = useState<string | null>(null)
   const [drag, setDrag] = useState<DragPreviewState | null>(null)
   const dragRef = useRef<DragPreviewState | null>(null)
   const didDropRef = useRef(false)
+  const importInputRef = useRef<HTMLInputElement>(null)
 
   const tags = useMemo(() => allTags(config.services), [config.services])
   const pinned = useMemo(
@@ -133,6 +143,9 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     setDialog({ kind: 'none' })
   }, [])
 
+  const importSummary =
+    dialog.kind === 'confirm-import' ? summarizeConfigImport(dialog.config) : null
+
   const dialogTitle =
     dialog.kind === 'add'
       ? 'Add a service'
@@ -142,11 +155,46 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           ? 'Search providers'
           : dialog.kind === 'confirm-delete'
             ? 'Remove service?'
-            : dialog.kind === 'edit-new' && editingService
-              ? `Add ${editingService.name}`
-              : dialog.kind === 'edit' && editingService
-                ? `Edit ${editingService.name}`
-                : ''
+            : dialog.kind === 'confirm-import'
+              ? 'Import config?'
+              : dialog.kind === 'edit-new' && editingService
+                ? `Add ${editingService.name}`
+                : dialog.kind === 'edit' && editingService
+                  ? `Edit ${editingService.name}`
+                  : ''
+
+  function exportConfig() {
+    const blob = new Blob([configExportJson(rawConfig)], { type: 'application/json' })
+    const href = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = href
+    anchor.download = 'wilab-config.json'
+    anchor.click()
+    URL.revokeObjectURL(href)
+  }
+
+  async function onImportFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const raw = await file.text()
+    const result = parseConfigImport(raw)
+    if (!result.ok) {
+      setImportError(result.error)
+      return
+    }
+
+    setImportError(null)
+    setDialog({ kind: 'confirm-import', config: result.config })
+  }
+
+  async function confirmImport() {
+    if (dialog.kind !== 'confirm-import') return
+    await replaceConfig(dialog.config)
+    setImportError(null)
+    closeDialog()
+  }
 
   function setDragState(next: DragPreviewState | null) {
     dragRef.current = next
@@ -229,13 +277,37 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
             />
           </form>
           {editMode && (
-            <button
-              type="button"
-              className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20"
-              onClick={() => setDialog({ kind: 'search-providers' })}
-            >
-              Search providers
-            </button>
+            <>
+              <button
+                type="button"
+                className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20"
+                onClick={() => setDialog({ kind: 'search-providers' })}
+              >
+                Search providers
+              </button>
+              <button
+                type="button"
+                className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20"
+                onClick={exportConfig}
+              >
+                Export config
+              </button>
+              <button
+                type="button"
+                className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20"
+                onClick={() => importInputRef.current?.click()}
+              >
+                Import config
+              </button>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="sr-only"
+                aria-label="Import config file"
+                onChange={(event) => void onImportFileChange(event)}
+              />
+            </>
           )}
           <button
             type="button"
@@ -245,6 +317,11 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
             {editMode ? 'Done' : 'Edit'}
           </button>
         </div>
+        {editMode && importError && (
+          <p className="mx-auto max-w-5xl px-6 pb-2 text-sm text-rose-300" role="alert">
+            {importError}
+          </p>
+        )}
         <div className="mx-auto flex max-w-5xl flex-wrap gap-1.5 px-6 pb-2">
           <TagChip active={activeTag == null} onClick={() => setActiveTag(null)}>
             All
@@ -394,6 +471,43 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                   onClick={() => void confirmDelete()}
                 >
                   Remove
+                </button>
+              </div>
+            </>
+          )}
+
+          {dialog.kind === 'confirm-import' && importSummary && (
+            <>
+              <p className="text-sm text-slate-300">
+                This replaces your current config with{' '}
+                <span className="font-medium text-white">
+                  {importSummary.serviceCount}{' '}
+                  {importSummary.serviceCount === 1 ? 'service' : 'services'}
+                </span>
+                {importSummary.pinnedCount > 0
+                  ? ` (${importSummary.pinnedCount} pinned)`
+                  : ''}
+                {' '}and {importSummary.searchProviderCount} search{' '}
+                {importSummary.searchProviderCount === 1 ? 'provider' : 'providers'}.
+              </p>
+              <p className="mt-3 text-sm text-amber-200/90">
+                Exported configs contain secrets (API keys and passwords). Treat the file as
+                confidential.
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+                  onClick={closeDialog}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg bg-amber-400 px-3 py-1.5 text-sm text-black hover:bg-amber-300"
+                  onClick={() => void confirmImport()}
+                >
+                  Replace config
                 </button>
               </div>
             </>
