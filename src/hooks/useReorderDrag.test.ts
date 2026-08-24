@@ -101,4 +101,27 @@ describe('useReorderDrag', () => {
     expect(onCommit).not.toHaveBeenCalled()
     expect(result.current.drag).toBeNull()
   })
+
+  it('keeps sourceOrder stable while displayOrder and visualIndex preview the move', () => {
+    const { result } = renderHook(() =>
+      useReorderDrag({
+        zone: 'grid',
+        order: ['a', 'b', 'c'],
+        onCommit: vi.fn(),
+      }),
+    )
+
+    act(() => {
+      result.current.begin('c')
+    })
+    act(() => {
+      result.current.hover('a')
+    })
+
+    expect(result.current.sourceOrder).toEqual(['a', 'b', 'c'])
+    expect(result.current.displayOrder).toEqual(['c', 'a', 'b'])
+    expect(result.current.visualIndex('c')).toBe(0)
+    expect(result.current.visualIndex('a')).toBe(1)
+    expect(result.current.visualIndex('b')).toBe(2)
+  })
 })

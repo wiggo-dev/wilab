@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   type DragPreviewState,
   previewOrder,
@@ -66,7 +66,22 @@ export function useReorderDrag({
     didDropRef.current = false
   }, [setDragState])
 
+  // Preview for visuals only — keep React children on `order` so HTML5 drag
+  // does not remount/move the dragged DOM node mid-gesture (which flashes).
   const displayOrder = previewOrder(order, drag, zone)
+
+  const visualIndexById = useMemo(() => {
+    const map = new Map<string, number>()
+    displayOrder.forEach((id, index) => {
+      map.set(id, index)
+    })
+    return map
+  }, [displayOrder])
+
+  const visualIndex = useCallback(
+    (id: string) => visualIndexById.get(id) ?? 0,
+    [visualIndexById],
+  )
 
   const isDragging = useCallback(
     (id: string) => drag != null && drag.zone === zone && drag.draggedId === id,
@@ -80,7 +95,11 @@ export function useReorderDrag({
 
   return {
     drag,
+    /** Committed id order — use this for React children (stable DOM). */
+    sourceOrder: order,
+    /** Preview id order during drag — drives CSS `order`, not DOM order. */
     displayOrder,
+    visualIndex,
     begin,
     hover,
     dropCommit,

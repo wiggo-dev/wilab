@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, DragEvent } from 'react'
+import type { ChangeEvent } from 'react'
 import type { CatalogEntry } from '@/lib/catalog/types'
 import {
   configExportJson,
@@ -35,34 +35,6 @@ type DialogState =
 type LandingPageProps = {
   config: WilabConfig
   catalog: CatalogEntry[]
-}
-
-function DropSlot({
-  compact,
-  beforeId,
-  onHover,
-  onDropCommit,
-}: {
-  compact?: boolean
-  beforeId: string
-  onHover: (beforeId: string) => void
-  onDropCommit: () => void
-}) {
-  return (
-    <div
-      aria-hidden
-      onDragOver={(event: DragEvent) => {
-        event.preventDefault()
-        event.dataTransfer.dropEffect = 'move'
-        onHover(beforeId)
-      }}
-      onDrop={(event: DragEvent) => {
-        event.preventDefault()
-        onDropCommit()
-      }}
-      className={`rounded-2xl border-2 border-dashed border-amber-300/70 bg-amber-400/10 ${compact ? 'h-32 w-28' : 'aspect-square'}`}
-    />
-  )
 }
 
 export function LandingPage({ config: initialConfig, catalog }: LandingPageProps) {
@@ -106,13 +78,14 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   })
 
   const tags = useMemo(() => allTags(config.services), [config.services])
+  // Stable DOM order (committed). Visual reorder uses CSS `order` from the hook.
   const pinned = useMemo(
-    () => pinnedServices(config.services, pinnedDrag.displayOrder),
-    [config.services, pinnedDrag.displayOrder],
+    () => pinnedServices(config.services, pinnedDrag.sourceOrder),
+    [config.services, pinnedDrag.sourceOrder],
   )
   const grid = useMemo(
-    () => gridServices(config.services, gridDrag.displayOrder, activeTag),
-    [activeTag, config.services, gridDrag.displayOrder],
+    () => gridServices(config.services, gridDrag.sourceOrder, activeTag),
+    [activeTag, config.services, gridDrag.sourceOrder],
   )
 
   const editingService =
@@ -304,15 +277,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           <h2 className="mb-2 text-xs tracking-[0.25em] text-sky-200/70 uppercase">Pinned</h2>
           <div className="flex flex-wrap gap-2">
             {pinned.map((service) => (
-              <div key={service.id} className="contents">
-                {pinnedDrag.isDropTarget(service.id) && (
-                  <DropSlot
-                    compact
-                    beforeId={service.id}
-                    onHover={(beforeId) => pinnedDrag.hover(beforeId)}
-                    onDropCommit={pinnedDrag.dropCommit}
-                  />
-                )}
+              <div key={service.id} style={{ order: pinnedDrag.visualIndex(service.id) }}>
                 <ServiceTile
                   service={service}
                   compact
@@ -340,14 +305,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           <h2 className="mb-2 text-xs tracking-[0.25em] text-sky-200/70 uppercase">Main grid</h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {grid.map((service) => (
-              <div key={service.id} className="contents">
-                {gridDrag.isDropTarget(service.id) && (
-                  <DropSlot
-                    beforeId={service.id}
-                    onHover={(beforeId) => gridDrag.hover(beforeId)}
-                    onDropCommit={gridDrag.dropCommit}
-                  />
-                )}
+              <div key={service.id} style={{ order: gridDrag.visualIndex(service.id) }}>
                 <ServiceTile
                   service={service}
                   zone="grid"
@@ -373,6 +331,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                 type="button"
                 aria-label="Add service"
                 onClick={() => setDialog({ kind: 'add' })}
+                style={{ order: 10_000 }}
                 className="flex aspect-square flex-col items-center justify-center rounded-2xl border border-dashed border-white/25 text-slate-400 hover:bg-white/5"
               >
                 <span className="text-3xl">+</span>
