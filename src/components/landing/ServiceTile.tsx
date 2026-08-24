@@ -3,7 +3,23 @@
 import type { DragEvent } from 'react'
 import type { DisplayService } from '@/lib/config/types'
 import type { GlanceResult } from '@/lib/integrations/types'
+import {
+  classifyGlanceAttention,
+  type GlanceAttention,
+} from '@/lib/landing/glance-attention'
 import { tagClass } from '@/lib/ui/tag-colors'
+
+const ATTENTION_BADGE: Record<GlanceAttention, string> = {
+  ok: 'bg-emerald-400/20 text-emerald-200',
+  warn: 'bg-amber-400/20 text-amber-100',
+  error: 'bg-rose-400/20 text-rose-200',
+}
+
+const ATTENTION_TILE: Record<GlanceAttention, string> = {
+  ok: '',
+  warn: 'bg-amber-400/5 ring-amber-400/45',
+  error: 'bg-rose-400/5 ring-rose-400/45',
+}
 
 export function ServiceLogo({
   service,
@@ -79,6 +95,11 @@ export function ServiceTile({
     onDropCommit?.()
   }
 
+  const attention = glance ? classifyGlanceAttention(glance) : 'ok'
+  const zoneRing = zone === 'pinned' && attention === 'ok' ? 'ring-sky-400/40' : 'ring-white/10'
+  const attentionTile = ATTENTION_TILE[attention]
+  const tileRing = attention === 'ok' ? zoneRing : ''
+
   const tileContent = (
     <>
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-1">
@@ -88,11 +109,8 @@ export function ServiceTile({
       <div className="flex h-5 w-full shrink-0 items-center justify-center pb-1">
         {glance ? (
           <div
-            className={`max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
-              glance.status === 'unavailable'
-                ? 'bg-amber-400/20 text-amber-200'
-                : 'bg-emerald-400/20 text-emerald-200'
-            } ${glance.status === 'stale' ? 'opacity-50' : ''}`}
+            data-attention={attention}
+            className={`max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] leading-none ${ATTENTION_BADGE[attention]} ${glance.status === 'stale' ? 'opacity-50' : ''}`}
           >
             {glance.text}
           </div>
@@ -106,12 +124,13 @@ export function ServiceTile({
 
   return (
     <div
+      data-attention-tile={attention}
       draggable={editMode}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={() => onDragEnd?.()}
       onDrop={onDrop}
-      className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 transition-[transform,box-shadow,opacity] duration-150 ${compact ? 'h-32 w-28' : 'aspect-square'} ${zone === 'pinned' ? 'ring-sky-400/40' : 'ring-white/10'} ${editMode ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-40 scale-95' : ''} ${isDropTarget ? 'ring-2 ring-amber-300/80 shadow-[0_0_0_4px_rgba(251,191,36,0.15)]' : ''}`}
+      className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 transition-[transform,box-shadow,opacity] duration-150 ${compact ? 'h-32 w-28' : 'aspect-square'} ${tileRing} ${attentionTile} ${editMode ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-40 scale-95' : ''} ${isDropTarget ? 'ring-2 ring-amber-300/80 shadow-[0_0_0_4px_rgba(251,191,36,0.15)]' : ''}`}
     >
       {onTogglePin && (
         <button
