@@ -4,7 +4,7 @@ import { getCatalog, getCatalogEntryById, catalogLogoPath } from './catalog'
 
 describe('catalog', () => {
   it('contains all predefined services', () => {
-    expect(getCatalog()).toHaveLength(18)
+    expect(getCatalog()).toHaveLength(20)
     expect(getCatalog().map((entry) => entry.id).sort()).toEqual([...CATALOG_ENTRY_IDS].sort())
   })
 

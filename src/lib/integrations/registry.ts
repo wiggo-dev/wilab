@@ -1,6 +1,7 @@
 import type { Service } from '@/lib/config/types'
 import type { IntegrationAdapter } from './adapter'
-import { sonarrAdapter, radarrAdapter } from './arr'
+import { adGuardHomeAdapter } from './adguard-home'
+import { sonarrAdapter, radarrAdapter, lidarrAdapter } from './arr'
 import { homeAssistantAdapter } from './home-assistant'
 import { httpHealthAdapter } from './http-health'
 import { immichAdapter } from './immich'
@@ -22,6 +23,7 @@ const adapters: IntegrationAdapter[] = [
   uptimeKumaAdapter,
   sonarrAdapter,
   radarrAdapter,
+  lidarrAdapter,
   sabnzbdAdapter,
   portainerAdapter,
   homeAssistantAdapter,
@@ -34,6 +36,7 @@ const adapters: IntegrationAdapter[] = [
   jellyfinAdapter,
   plexAdapter,
   frigateAdapter,
+  adGuardHomeAdapter,
 ]
 
 const adaptersByKind = new Map(adapters.map((adapter) => [adapter.kind, adapter]))

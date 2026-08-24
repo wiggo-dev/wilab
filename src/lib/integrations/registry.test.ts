@@ -8,6 +8,7 @@ const INTEGRATION_KINDS: IntegrationKind[] = [
   'home-assistant',
   'sonarr',
   'radarr',
+  'lidarr',
   'sabnzbd',
   'portainer',
   'uptime-kuma',
@@ -20,6 +21,7 @@ const INTEGRATION_KINDS: IntegrationKind[] = [
   'jellyfin',
   'plex',
   'frigate',
+  'adguard-home',
 ]
 
 describe('integration adapter registry', () => {

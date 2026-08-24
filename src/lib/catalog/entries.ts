@@ -37,6 +37,13 @@ const entries: CatalogEntry[] = [
     integration: 'radarr',
   },
   {
+    id: 'lidarr',
+    name: 'Lidarr',
+    defaultUrl: 'http://{host}:8686',
+    logo: '',
+    integration: 'lidarr',
+  },
+  {
     id: 'sabnzbd',
     name: 'SABnzbd',
     defaultUrl: 'http://{host}:8080',
@@ -126,6 +133,13 @@ const entries: CatalogEntry[] = [
     defaultUrl: 'http://{host}:8971',
     logo: '',
     integration: 'frigate',
+  },
+  {
+    id: 'adguard-home',
+    name: 'AdGuard Home',
+    defaultUrl: 'http://{host}',
+    logo: '',
+    integration: 'adguard-home',
   },
 ]
 
