@@ -20,6 +20,7 @@ For catalog entries without a dedicated integration (and for custom services), e
 ### Config and upgrades
 
 - Config is stored on the host at `./data/config.json` (bind-mounted to `/data` in the container). Create the directory with `mkdir -p data` if Compose does not.
+- In **Edit** mode, use **Export config** / **Import config** to download or restore a backup. Exports are plain JSON and **contain secrets** (API keys and passwords) — treat the file as confidential.
 - Upgrades: `docker compose pull && docker compose up -d` — your `./data` folder is left alone.
 - If you previously used the named `wilab-data` volume, copy it out once with `docker compose cp wilab:/data/config.json ./data/config.json` (after `mkdir -p data`), then recreate with the updated compose file.
 

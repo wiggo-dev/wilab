@@ -77,6 +77,27 @@ describe('/api/config', () => {
     expect(reloaded.gridOrder).toEqual(['service-a'])
   })
 
+  it('PUT rejects unsupported schemaVersion', async () => {
+    const { PUT } = await import('./route')
+
+    await expect(
+      PUT(
+        new Request('http://localhost/api/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            schemaVersion: 99,
+            services: [],
+            gridOrder: [],
+            pinnedOrder: [],
+            searchProviders: DEFAULT_SEARCH_PROVIDERS,
+            activeSearchProviderId: 'ddg',
+          }),
+        }),
+      ),
+    ).rejects.toThrow(/Unsupported schema version/)
+  })
+
   it('persists service add, update, pin, and remove mutations', async () => {
     const { GET, PUT } = await import('./route')
     const initial = await (await GET()).json()

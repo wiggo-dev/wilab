@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import { seedConfig } from './helpers'
 
@@ -70,6 +71,55 @@ test.describe('wilab smoke', () => {
     await page.getByRole('button', { name: 'Edit Router' }).click()
     await expect(page.getByLabel('HTTP health check')).toBeChecked()
     await expect(page.getByLabel('Health path (optional)')).toHaveValue('/health')
+  })
+
+  test('exports and imports config from edit mode', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Edit' }).click()
+
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Export config' }).click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toBe('wilab-config.json')
+    const downloadPath = await download.path()
+    expect(downloadPath).toBeTruthy()
+    const exported = await readFile(downloadPath!, 'utf8')
+    const parsed = JSON.parse(exported)
+    expect(parsed.schemaVersion).toBe(1)
+    expect(parsed.services.length).toBeGreaterThan(0)
+
+    const importedOnly = {
+      schemaVersion: 1,
+      services: [
+        {
+          id: 'imported-only',
+          catalogId: null,
+          name: 'Imported Only',
+          url: 'http://imported.lab',
+          logo: '',
+          tags: [],
+          integration: null,
+        },
+      ],
+      gridOrder: ['imported-only'],
+      pinnedOrder: [],
+      searchProviders: parsed.searchProviders,
+      activeSearchProviderId: parsed.activeSearchProviderId,
+    }
+
+    await page.getByLabel('Import config file').setInputFiles({
+      name: 'import.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(importedOnly)),
+    })
+
+    await expect(page.getByRole('heading', { name: 'Import config?' })).toBeVisible()
+    await expect(page.getByText(/1 service/)).toBeVisible()
+    await expect(page.getByText(/contain secrets/i)).toBeVisible()
+    await page.getByRole('button', { name: 'Replace config' }).click()
+
+    await expect(page.getByText('Imported Only')).toBeVisible()
+    await expect(page.getByText('Home Assistant')).toHaveCount(0)
   })
 
   test('submits header search to the active provider', async ({ page }) => {
