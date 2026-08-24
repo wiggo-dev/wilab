@@ -22,6 +22,14 @@ export type GlanceEngineOptions = {
   timeoutMs?: number
 }
 
+function liveFingerprint(config: WilabConfig): string {
+  return config.services
+    .filter((service) => isSupportedIntegration(service.integration))
+    .map((service) => `${service.id}:${JSON.stringify(service.integration)}:${service.url}`)
+    .sort()
+    .join('|')
+}
+
 export class GlanceEngine {
   private readonly fetchImpl: typeof fetch
   private readonly now: () => number
@@ -29,7 +37,8 @@ export class GlanceEngine {
   private readonly staleMs: number
   private readonly timeoutMs: number
   private readonly lastGoodByService = new Map<string, LastGood>()
-  private cachedLive: { fetchedAt: number; response: LiveResponse } | null = null
+  private cachedLive: { fetchedAt: number; fingerprint: string; response: LiveResponse } | null =
+    null
 
   constructor(options: GlanceEngineOptions = {}) {
     this.fetchImpl = options.fetch ?? fetch
@@ -41,12 +50,17 @@ export class GlanceEngine {
 
   async get(config: WilabConfig): Promise<LiveResponse> {
     const now = this.now()
-    if (this.cachedLive && now - this.cachedLive.fetchedAt < this.coalesceMs) {
+    const fingerprint = liveFingerprint(config)
+    if (
+      this.cachedLive &&
+      this.cachedLive.fingerprint === fingerprint &&
+      now - this.cachedLive.fetchedAt < this.coalesceMs
+    ) {
       return this.applyStaleAging(this.cachedLive.response, now)
     }
 
     const response = await this.aggregate(config)
-    this.cachedLive = { fetchedAt: now, response }
+    this.cachedLive = { fetchedAt: now, fingerprint, response }
     return response
   }
 

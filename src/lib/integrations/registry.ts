@@ -2,6 +2,7 @@ import type { Service } from '@/lib/config/types'
 import type { IntegrationAdapter } from './adapter'
 import { sonarrAdapter, radarrAdapter } from './arr'
 import { homeAssistantAdapter } from './home-assistant'
+import { httpHealthAdapter } from './http-health'
 import { immichAdapter } from './immich'
 import { portainerAdapter } from './portainer'
 import { prowlarrAdapter } from './prowlarr'
@@ -14,6 +15,7 @@ import { uptimeKumaAdapter } from './uptime-kuma'
 import { zigbee2mqttAdapter } from './zigbee2mqtt'
 
 const adapters: IntegrationAdapter[] = [
+  httpHealthAdapter,
   uptimeKumaAdapter,
   sonarrAdapter,
   radarrAdapter,

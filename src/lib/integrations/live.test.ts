@@ -78,7 +78,40 @@ describe('GlanceEngine', () => {
     now = 10_000 + LIVE_COALESCE_MS - 1
     await glances.get(baseConfig)
 
+    // One upstream call per integrated service on the first get; second get is coalesced.
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('re-polls when integrated services or credentials change', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () => 'monitor_status{monitor_id="1"} 1\n',
+    })
+
+    const glances = engine()
+    now = 10_000
+    await glances.get(baseConfig)
+
+    const withHttpHealth: WilabConfig = {
+      ...baseConfig,
+      services: [
+        ...baseConfig.services,
+        {
+          id: 'svc-jellyfin',
+          catalogId: 'jellyfin',
+          name: 'Jellyfin',
+          url: 'http://jellyfin.lab:8096',
+          logo: '',
+          tags: [],
+          integration: { kind: 'http-health', path: '' },
+        },
+      ],
+    }
+
+    now = 10_000 + 1_000
+    await glances.get(withHttpHealth)
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(2)
   })
 
   it('marks previously healthy glances stale after 90 seconds', async () => {

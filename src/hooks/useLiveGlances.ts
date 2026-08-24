@@ -5,7 +5,7 @@ import type { GlanceResult } from '@/lib/integrations/types'
 
 const POLL_INTERVAL_MS = 30_000
 
-export function useLiveGlances() {
+export function useLiveGlances(refreshKey = '') {
   const [glances, setGlances] = useState<Record<string, GlanceResult>>({})
   const [loaded, setLoaded] = useState(false)
 
@@ -32,7 +32,7 @@ export function useLiveGlances() {
       cancelled = true
       clearInterval(timer)
     }
-  }, [])
+  }, [refreshKey])
 
   return { glances, loaded }
 }

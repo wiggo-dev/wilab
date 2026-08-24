@@ -22,6 +22,7 @@ export const CATALOG_ENTRY_IDS = [
 export type CatalogEntryId = (typeof CATALOG_ENTRY_IDS)[number]
 
 export type IntegrationKind =
+  | 'http-health'
   | 'home-assistant'
   | 'sonarr'
   | 'radarr'

@@ -66,6 +66,13 @@ export function useWilabConfig(initialConfig: WilabConfig) {
     [flushImmediate],
   )
 
+  const saveNewService = useCallback(
+    async (service: Service) => {
+      await flushImmediate(addService(configRef.current, service))
+    },
+    [flushImmediate],
+  )
+
   const saveCustomService = useCallback(
     async (input: { name: string; url: string; logo: string; tags: string[] }) => {
       const service = createCustomService({
@@ -139,6 +146,7 @@ export function useWilabConfig(initialConfig: WilabConfig) {
     editMode,
     setEditMode,
     addFromCatalog,
+    saveNewService,
     saveCustomService,
     saveService,
     deleteService,

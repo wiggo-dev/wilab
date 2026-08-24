@@ -63,7 +63,7 @@ describe('LandingPage', () => {
     )
   })
 
-  it('adds from catalog and opens the edit dialog with defaults', async () => {
+  it('opens a draft catalog service and only persists on Save', async () => {
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/live') {
         return { ok: true, json: async () => ({ services: {} }) }
@@ -88,14 +88,31 @@ describe('LandingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Sonarr/i }))
 
     await waitFor(() => expect(screen.getByDisplayValue('http://{host}:8989')).toBeTruthy())
+    expect(screen.getByRole('heading', { name: 'Add Sonarr' })).toBeTruthy()
 
-    const configPut = fetchMock.mock.calls.find(
+    const putsBeforeSave = fetchMock.mock.calls.filter(
       ([url, init]) => url === '/api/config' && (init as RequestInit | undefined)?.method === 'PUT',
     )
-    expect(configPut).toBeTruthy()
-    const saved = JSON.parse(String((configPut?.[1] as RequestInit).body))
-    expect(saved.services).toHaveLength(1)
-    expect(saved.services[0].catalogId).toBe('sonarr')
+    expect(putsBeforeSave).toHaveLength(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('heading', { name: 'Add Sonarr' })).toBeNull()
+    expect(screen.queryByText('Sonarr')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add service' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Sonarr/i }))
+    await waitFor(() => expect(screen.getByDisplayValue('http://{host}:8989')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      const configPut = fetchMock.mock.calls.find(
+        ([url, init]) => url === '/api/config' && (init as RequestInit | undefined)?.method === 'PUT',
+      )
+      expect(configPut).toBeTruthy()
+      const saved = JSON.parse(String((configPut?.[1] as RequestInit).body))
+      expect(saved.services).toHaveLength(1)
+      expect(saved.services[0].catalogId).toBe('sonarr')
+    })
   })
 
   it('shows a trash control in edit mode and deletes after confirmation', async () => {

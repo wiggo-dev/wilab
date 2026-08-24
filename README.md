@@ -15,6 +15,8 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000). Click **Edit** to add services from the bundled catalog or define your own.
 
+For catalog entries without a dedicated integration (and for custom services), enable **HTTP health check** in the service edit dialog to poll the URL (or an optional path on the same host). After you save, a small status pill under the tile name shows `Up`, an HTTP status code, or `Unavailable`.
+
 ### Config and upgrades
 
 - Config is stored on the host at `./data/config.json` (bind-mounted to `/data` in the container). Create the directory with `mkdir -p data` if Compose does not.
