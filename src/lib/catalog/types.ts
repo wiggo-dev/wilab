@@ -37,6 +37,7 @@ export type IntegrationKind =
   | 'qnap'
   | 'jellyfin'
   | 'plex'
+  | 'frigate'
 
 export type CatalogEntry = {
   id: CatalogEntryId

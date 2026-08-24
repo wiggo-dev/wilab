@@ -19,6 +19,7 @@ const INTEGRATION_KINDS: IntegrationKind[] = [
   'qnap',
   'jellyfin',
   'plex',
+  'frigate',
 ]
 
 describe('integration adapter registry', () => {
