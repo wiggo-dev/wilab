@@ -125,7 +125,7 @@ const entries: CatalogEntry[] = [
     name: 'Frigate',
     defaultUrl: 'http://{host}:8971',
     logo: '',
-    integration: null,
+    integration: 'frigate',
   },
 ]
 

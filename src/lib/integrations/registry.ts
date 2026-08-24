@@ -5,6 +5,7 @@ import { homeAssistantAdapter } from './home-assistant'
 import { httpHealthAdapter } from './http-health'
 import { immichAdapter } from './immich'
 import { jellyfinAdapter } from './jellyfin'
+import { frigateAdapter } from './frigate'
 import { plexAdapter } from './plex'
 import { portainerAdapter } from './portainer'
 import { prowlarrAdapter } from './prowlarr'
@@ -32,6 +33,7 @@ const adapters: IntegrationAdapter[] = [
   qnapAdapter,
   jellyfinAdapter,
   plexAdapter,
+  frigateAdapter,
 ]
 
 const adaptersByKind = new Map(adapters.map((adapter) => [adapter.kind, adapter]))
