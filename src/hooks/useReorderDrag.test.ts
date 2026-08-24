@@ -124,4 +124,29 @@ describe('useReorderDrag', () => {
     expect(result.current.visualIndex('a')).toBe(1)
     expect(result.current.visualIndex('b')).toBe(2)
   })
+
+  it('ignores hover on the dragged id so adjacent swaps do not flip-flop', () => {
+    const { result } = renderHook(() =>
+      useReorderDrag({
+        zone: 'grid',
+        order: ['a', 'b', 'c'],
+        onCommit: vi.fn(),
+      }),
+    )
+
+    act(() => {
+      result.current.begin('b')
+    })
+    act(() => {
+      result.current.hover('a')
+    })
+    expect(result.current.displayOrder).toEqual(['b', 'a', 'c'])
+    expect(result.current.drag?.overId).toBe('a')
+
+    act(() => {
+      result.current.hover('b')
+    })
+    expect(result.current.drag?.overId).toBe('a')
+    expect(result.current.displayOrder).toEqual(['b', 'a', 'c'])
+  })
 })

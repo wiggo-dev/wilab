@@ -41,6 +41,9 @@ export function useReorderDrag({
     (id: string) => {
       const current = dragRef.current
       if (!current || current.zone !== zone) return
+      // After an adjacent CSS-order swap the pointer often sits on the
+      // invisible dragged node; ignoring that prevents overId flip-flop flash.
+      if (id === current.draggedId) return
       if (current.overId === id) return
       setDragState({ ...current, overId: id })
     },
