@@ -1,15 +1,12 @@
 import { apiKeyAdapter } from './adapter'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { getJson, trimBase } from './upstream-request'
 
 export function healthUrl(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/api/v1/health`
+  return `${trimBase(serviceUrl)}/api/v1/health`
 }
 
 export function indexerUrl(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/api/v1/indexer`
+  return `${trimBase(serviceUrl)}/api/v1/indexer`
 }
 
 type HealthItem = {
@@ -45,31 +42,23 @@ export function formatProwlarrGlance(input: {
   return `${enabled}/${total} indexers`
 }
 
-async function fetchJson<T>(
-  url: string,
-  apiKey: string,
-  fetchImpl: typeof fetch,
-  errorLabel: string,
-): Promise<T> {
-  const response = await fetchImpl(url, {
-    headers: { 'X-Api-Key': apiKey },
-  })
-
-  if (!response.ok) {
-    throw new Error(`${errorLabel} failed: ${response.status}`)
-  }
-
-  return response.json() as Promise<T>
-}
-
 export async function fetchProwlarrGlance(
   serviceUrl: string,
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
+  const headers = { 'X-Api-Key': apiKey }
   const [health, indexers] = await Promise.all([
-    fetchJson<HealthItem[]>(healthUrl(serviceUrl), apiKey, fetchImpl, 'Prowlarr health'),
-    fetchJson<Indexer[]>(indexerUrl(serviceUrl), apiKey, fetchImpl, 'Prowlarr indexers'),
+    getJson<HealthItem[]>(healthUrl(serviceUrl), {
+      headers,
+      fetch: fetchImpl,
+      label: 'Prowlarr health',
+    }),
+    getJson<Indexer[]>(indexerUrl(serviceUrl), {
+      headers,
+      fetch: fetchImpl,
+      label: 'Prowlarr indexers',
+    }),
   ])
 
   return formatProwlarrGlance({ health, indexers })

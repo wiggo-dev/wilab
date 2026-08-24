@@ -1,13 +1,10 @@
 import type { IntegrationAdapter } from './adapter'
 import { LIVE_COALESCE_MS } from './types'
 import { isQnapIntegration } from './types'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { trimBase } from './upstream-request'
 
 function cgiBase(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/cgi-bin`
+  return `${trimBase(serviceUrl)}/cgi-bin`
 }
 
 export function authLoginUrl(serviceUrl: string): string {
@@ -65,7 +62,7 @@ export function resetQnapSessionCache(): void {
 }
 
 function sessionKey(serviceUrl: string, username: string): string {
-  return `${apiBase(serviceUrl)}:${username}`
+  return `${trimBase(serviceUrl)}:${username}`
 }
 
 function readCachedSid(serviceUrl: string, username: string, now: number): string | null {
