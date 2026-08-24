@@ -17,6 +17,8 @@ const INTEGRATION_KINDS: IntegrationKind[] = [
   'unifi',
   'slzb-os',
   'qnap',
+  'jellyfin',
+  'plex',
 ]
 
 describe('integration adapter registry', () => {

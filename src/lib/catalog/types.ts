@@ -35,6 +35,8 @@ export type IntegrationKind =
   | 'unifi'
   | 'slzb-os'
   | 'qnap'
+  | 'jellyfin'
+  | 'plex'
 
 export type CatalogEntry = {
   id: CatalogEntryId
