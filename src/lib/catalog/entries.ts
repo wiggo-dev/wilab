@@ -90,7 +90,7 @@ const entries: CatalogEntry[] = [
     name: 'Jellyfin',
     defaultUrl: 'http://{host}:8096',
     logo: '',
-    integration: null,
+    integration: 'jellyfin',
   },
   {
     id: 'qnap',
@@ -104,7 +104,7 @@ const entries: CatalogEntry[] = [
     name: 'Plex',
     defaultUrl: 'http://{host}:32400/web',
     logo: '',
-    integration: null,
+    integration: 'plex',
   },
   {
     id: 'vaultwarden',

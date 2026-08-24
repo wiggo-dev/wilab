@@ -4,6 +4,8 @@ import { sonarrAdapter, radarrAdapter } from './arr'
 import { homeAssistantAdapter } from './home-assistant'
 import { httpHealthAdapter } from './http-health'
 import { immichAdapter } from './immich'
+import { jellyfinAdapter } from './jellyfin'
+import { plexAdapter } from './plex'
 import { portainerAdapter } from './portainer'
 import { prowlarrAdapter } from './prowlarr'
 import { qnapAdapter } from './qnap'
@@ -28,6 +30,8 @@ const adapters: IntegrationAdapter[] = [
   unifiAdapter,
   slzbOsAdapter,
   qnapAdapter,
+  jellyfinAdapter,
+  plexAdapter,
 ]
 
 const adaptersByKind = new Map(adapters.map((adapter) => [adapter.kind, adapter]))
