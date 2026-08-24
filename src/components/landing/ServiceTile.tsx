@@ -130,7 +130,7 @@ export function ServiceTile({
       onDragOver={onDragOver}
       onDragEnd={() => onDragEnd?.()}
       onDrop={onDrop}
-      className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 transition-[transform,box-shadow,opacity] duration-150 ${compact ? 'h-32 w-28' : 'aspect-square'} ${tileRing} ${attentionTile} ${editMode ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-40 scale-95' : ''} ${isDropTarget ? 'ring-2 ring-amber-300/80 shadow-[0_0_0_4px_rgba(251,191,36,0.15)]' : ''}`}
+      className={`group relative flex flex-col items-center rounded-2xl bg-white/8 p-2 ring-1 transition-[transform,box-shadow,opacity] duration-150 ${compact ? 'h-32 w-28' : 'aspect-square'} ${tileRing} ${attentionTile} ${editMode ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-0' : ''} ${isDropTarget ? 'ring-2 ring-amber-300/80 shadow-[0_0_0_4px_rgba(251,191,36,0.15)]' : ''}`}
     >
       {onTogglePin && (
         <button
