@@ -15,6 +15,15 @@ describe('arr integration (Sonarr / Radarr)', () => {
     )
   })
 
+  it('builds v1 api urls for Lidarr', () => {
+    expect(queueStatusUrl('http://lidarr.lab:8686', 'v1')).toBe(
+      'http://lidarr.lab:8686/api/v1/queue/status',
+    )
+    expect(wantedMissingUrl('http://lidarr.lab:8686', 'v1')).toBe(
+      'http://lidarr.lab:8686/api/v1/wanted/missing?page=1&pageSize=1',
+    )
+  })
+
   describe('formatArrGlance', () => {
     it('shows queue and missing when both are active', () => {
       expect(formatArrGlance({ queue: 2, missing: 1 })).toBe('Queue 2 · 1 missing')
@@ -77,6 +86,28 @@ describe('arr integration (Sonarr / Radarr)', () => {
 
       await expect(fetchArrGlance('http://sonarr.lab:8989', 'bad', fetchMock)).rejects.toThrow(
         'Arr queue status failed: 401',
+      )
+    })
+
+    it('fetches Lidarr via api v1', async () => {
+      fetchMock.mockImplementation(async (url: string) => {
+        if (url.includes('/api/v1/queue/status')) {
+          return { ok: true, json: async () => ({ totalCount: 1 }) }
+        }
+        if (url.includes('/api/v1/wanted/missing')) {
+          return { ok: true, json: async () => ({ totalRecords: 0 }) }
+        }
+        throw new Error(`unexpected url: ${url}`)
+      })
+
+      const text = await fetchArrGlance('http://lidarr.lab:8686', 'lidarr_key', fetchMock, 'v1')
+
+      expect(text).toBe('Queue 1')
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://lidarr.lab:8686/api/v1/queue/status',
+        expect.objectContaining({
+          headers: { 'X-Api-Key': 'lidarr_key' },
+        }),
       )
     })
   })

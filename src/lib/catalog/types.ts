@@ -4,6 +4,7 @@ export const CATALOG_ENTRY_IDS = [
   'esphome',
   'sonarr',
   'radarr',
+  'lidarr',
   'sabnzbd',
   'prowlarr',
   'portainer',
@@ -17,6 +18,7 @@ export const CATALOG_ENTRY_IDS = [
   'vaultwarden',
   'actual-budget',
   'frigate',
+  'adguard-home',
 ] as const
 
 export type CatalogEntryId = (typeof CATALOG_ENTRY_IDS)[number]
@@ -26,6 +28,7 @@ export type IntegrationKind =
   | 'home-assistant'
   | 'sonarr'
   | 'radarr'
+  | 'lidarr'
   | 'sabnzbd'
   | 'portainer'
   | 'uptime-kuma'
@@ -38,6 +41,7 @@ export type IntegrationKind =
   | 'jellyfin'
   | 'plex'
   | 'frigate'
+  | 'adguard-home'
 
 export type CatalogEntry = {
   id: CatalogEntryId
