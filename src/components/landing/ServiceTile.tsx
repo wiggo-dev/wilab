@@ -151,7 +151,12 @@ export function ServiceTile({
         </button>
       )}
       {editMode && onEdit ? (
-        <button type="button" className={interactiveClassName} onClick={onEdit}>
+        <button
+          type="button"
+          className={interactiveClassName}
+          onClick={onEdit}
+          aria-label={`Edit ${service.name}`}
+        >
           {tileContent}
         </button>
       ) : (

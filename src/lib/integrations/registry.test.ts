@@ -4,6 +4,7 @@ import type { IntegrationKind } from '@/lib/catalog/types'
 import { listIntegrationAdapters } from './registry'
 
 const INTEGRATION_KINDS: IntegrationKind[] = [
+  'http-health',
   'home-assistant',
   'sonarr',
   'radarr',

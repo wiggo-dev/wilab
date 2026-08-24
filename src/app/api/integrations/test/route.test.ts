@@ -58,6 +58,27 @@ describe('/api/integrations/test', () => {
     expect(body.error).toContain('401')
   })
 
+  it('returns Up for an http-health check on 2xx', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 204 })
+
+    const { POST } = await import('./route')
+    const response = await POST(
+      new Request('http://localhost/api/integrations/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: 'http://jellyfin.lab:8096',
+          integration: { kind: 'http-health', path: '' },
+        }),
+      }),
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body).toEqual({ ok: true, text: 'Up' })
+    expect(fetchMock).toHaveBeenCalledWith('http://jellyfin.lab:8096', { method: 'GET' })
+  })
+
   it('validates request body', async () => {
     const { POST } = await import('./route')
     const response = await POST(

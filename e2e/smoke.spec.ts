@@ -20,26 +20,56 @@ test.describe('wilab smoke', () => {
     await page.getByRole('button', { name: 'Add service' }).click()
     await page.getByRole('button', { name: 'Plex' }).click()
 
-    await expect(page.getByRole('heading', { name: 'Edit Plex' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Add Plex' })).toBeVisible()
     await page.getByRole('textbox', { name: 'URL', exact: true }).fill('http://plex.lab.lan:32400/web')
     await page.getByRole('button', { name: 'Save' }).click()
 
-    await expect(page.getByRole('heading', { name: 'Edit Plex' })).toBeHidden()
-    await expect(page.getByRole('button', { name: 'Plex' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Add Plex' })).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Edit Plex' })).toBeVisible()
+  })
+
+  test('discards a catalog pick when the dialog is closed without saving', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Edit' }).click()
+    await page.getByRole('button', { name: 'Add service' }).click()
+    await page.getByRole('button', { name: 'Plex' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Add Plex' })).toBeVisible()
+    await page.keyboard.press('Escape')
+
+    await expect(page.getByRole('heading', { name: 'Add Plex' })).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Edit Plex' })).toHaveCount(0)
   })
 
   test('edits a service from the tile wall', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Edit' }).click()
-    await page.getByRole('button', { name: 'Router' }).click()
+    await page.getByRole('button', { name: 'Edit Router' }).click()
 
     await expect(page.getByRole('heading', { name: 'Edit Router' })).toBeVisible()
     await page.getByLabel('Name').fill('Gateway')
     await page.getByRole('button', { name: 'Save' }).click()
 
     await expect(page.getByRole('heading', { name: 'Edit Gateway' })).toBeHidden()
-    await expect(page.getByRole('button', { name: 'Gateway' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Edit Gateway' })).toBeVisible()
     await expect(page.getByText('Router')).toHaveCount(0)
+  })
+
+  test('enables HTTP health check on a custom service', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Edit' }).click()
+    await page.getByRole('button', { name: 'Edit Router' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Edit Router' })).toBeVisible()
+    await page.getByLabel('HTTP health check').check()
+    await page.getByLabel('Health path (optional)').fill('/health')
+    await page.getByRole('button', { name: 'Save' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Edit Router' })).toBeHidden()
+
+    await page.getByRole('button', { name: 'Edit Router' }).click()
+    await expect(page.getByLabel('HTTP health check')).toBeChecked()
+    await expect(page.getByLabel('Health path (optional)')).toHaveValue('/health')
   })
 
   test('submits header search to the active provider', async ({ page }) => {

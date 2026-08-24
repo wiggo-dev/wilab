@@ -1,6 +1,6 @@
 import type { Service } from '@/lib/config/types'
 import type { ServiceIntegration } from './types'
-import { isQnapIntegration } from './types'
+import { isApiKeyIntegration } from './types'
 
 export type IntegrationAdapter = {
   kind: string
@@ -24,8 +24,8 @@ export function apiKeyAdapter(
     kind,
     createDefault: () => createApiKeyIntegration(kind),
     fetchGlance: (service, integration, fetchImpl) => {
-      if (isQnapIntegration(integration)) {
-        throw new Error(`Integration kind ${kind} does not use username/password`)
+      if (!isApiKeyIntegration(integration)) {
+        throw new Error(`Integration kind ${kind} requires an API key`)
       }
       return fetchFn(service.url, integration.apiKey, fetchImpl)
     },

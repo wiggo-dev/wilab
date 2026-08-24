@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { DragEvent } from 'react'
 import type { CatalogEntry } from '@/lib/catalog/types'
-import type { WilabConfig } from '@/lib/config/types'
+import { createServiceFromCatalog } from '@/lib/config/mutations'
+import type { Service, WilabConfig } from '@/lib/config/types'
 import { useWilabConfig } from '@/hooks/useWilabConfig'
 import { useLiveGlances } from '@/hooks/useLiveGlances'
 import {
@@ -22,6 +23,7 @@ import { TagChip } from './TagChip'
 type DialogState =
   | { kind: 'none' }
   | { kind: 'edit'; id: string }
+  | { kind: 'edit-new'; service: Service }
   | { kind: 'add' }
   | { kind: 'custom' }
   | { kind: 'search-providers' }
@@ -65,7 +67,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     config,
     editMode,
     setEditMode,
-    addFromCatalog,
+    saveNewService,
     saveCustomService,
     saveService,
     deleteService,
@@ -76,7 +78,10 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     saveSearchProvider,
     createSearchProvider,
   } = useWilabConfig(initialConfig)
-  const { glances, loaded } = useLiveGlances()
+  const glanceRefreshKey = config.services
+    .map((service) => `${service.id}:${JSON.stringify(service.integration)}:${service.url}`)
+    .join('|')
+  const { glances, loaded } = useLiveGlances(glanceRefreshKey)
 
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -96,7 +101,12 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   )
 
   const editingService =
-    dialog.kind === 'edit' ? config.services.find((service) => service.id === dialog.id) : null
+    dialog.kind === 'edit'
+      ? config.services.find((service) => service.id === dialog.id)
+      : dialog.kind === 'edit-new'
+        ? dialog.service
+        : null
+  const editingIsNew = dialog.kind === 'edit-new'
   const deletingService =
     dialog.kind === 'confirm-delete'
       ? config.services.find((service) => service.id === dialog.id)
@@ -114,10 +124,29 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     window.open(url, '_blank', 'noopener')
   }
 
-  async function pickCatalogEntry(entry: CatalogEntry) {
-    const serviceId = await addFromCatalog(entry)
-    setDialog({ kind: 'edit', id: serviceId })
+  function pickCatalogEntry(entry: CatalogEntry) {
+    const service = createServiceFromCatalog(entry, crypto.randomUUID())
+    setDialog({ kind: 'edit-new', service })
   }
+
+  const closeDialog = useCallback(() => {
+    setDialog({ kind: 'none' })
+  }, [])
+
+  const dialogTitle =
+    dialog.kind === 'add'
+      ? 'Add a service'
+      : dialog.kind === 'custom'
+        ? 'Custom service'
+        : dialog.kind === 'search-providers'
+          ? 'Search providers'
+          : dialog.kind === 'confirm-delete'
+            ? 'Remove service?'
+            : dialog.kind === 'edit-new' && editingService
+              ? `Add ${editingService.name}`
+              : dialog.kind === 'edit' && editingService
+                ? `Edit ${editingService.name}`
+                : ''
 
   function setDragState(next: DragPreviewState | null) {
     dragRef.current = next
@@ -312,78 +341,82 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
         </section>
       </main>
 
-      {dialog.kind === 'edit' && editingService && (
-        <Modal title={`Edit ${editingService.name}`} onClose={() => setDialog({ kind: 'none' })}>
-          <ServiceForm
-            service={editingService}
-            onSave={async (patch) => {
-              await saveService(editingService.id, patch)
-              setDialog({ kind: 'none' })
-            }}
-            onRemove={async () => {
-              await deleteService(editingService.id)
-              setDialog({ kind: 'none' })
-            }}
-          />
-        </Modal>
-      )}
+      {dialog.kind !== 'none' && dialogTitle && (
+        <Modal title={dialogTitle} onClose={closeDialog}>
+          {dialog.kind === 'add' && (
+            <CatalogPicker
+              catalog={catalog}
+              services={config.services}
+              onPick={pickCatalogEntry}
+              onCustom={() => setDialog({ kind: 'custom' })}
+            />
+          )}
 
-      {dialog.kind === 'confirm-delete' && deletingService && (
-        <Modal title="Remove service?" onClose={() => setDialog({ kind: 'none' })}>
-          <p className="text-sm text-slate-300">
-            Remove <span className="font-medium text-white">{deletingService.name}</span> from your
-            landing page? This cannot be undone from here.
-          </p>
-          <div className="mt-5 flex justify-end gap-2">
-            <button
-              type="button"
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
-              onClick={() => setDialog({ kind: 'none' })}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="rounded-lg bg-rose-500 px-3 py-1.5 text-sm text-white hover:bg-rose-400"
-              onClick={() => void confirmDelete()}
-            >
-              Remove
-            </button>
-          </div>
-        </Modal>
-      )}
+          {(dialog.kind === 'edit' || dialog.kind === 'edit-new') && editingService && (
+            <ServiceForm
+              key={editingService.id}
+              service={editingService}
+              removeLabel={editingIsNew ? 'Cancel' : 'Remove'}
+              onSave={async (patch) => {
+                if (editingIsNew) {
+                  await saveNewService({ ...editingService, ...patch })
+                } else {
+                  await saveService(editingService.id, patch)
+                }
+                closeDialog()
+              }}
+              onRemove={async () => {
+                if (!editingIsNew) {
+                  await deleteService(editingService.id)
+                }
+                closeDialog()
+              }}
+            />
+          )}
 
-      {dialog.kind === 'add' && (
-        <Modal title="Add a service" onClose={() => setDialog({ kind: 'none' })}>
-          <CatalogPicker
-            catalog={catalog}
-            services={config.services}
-            onPick={(entry) => void pickCatalogEntry(entry)}
-            onCustom={() => setDialog({ kind: 'custom' })}
-          />
-        </Modal>
-      )}
+          {dialog.kind === 'confirm-delete' && deletingService && (
+            <>
+              <p className="text-sm text-slate-300">
+                Remove <span className="font-medium text-white">{deletingService.name}</span> from
+                your landing page? This cannot be undone from here.
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg px-3 py-1.5 text-sm text-slate-300 hover:bg-white/10"
+                  onClick={closeDialog}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg bg-rose-500 px-3 py-1.5 text-sm text-white hover:bg-rose-400"
+                  onClick={() => void confirmDelete()}
+                >
+                  Remove
+                </button>
+              </div>
+            </>
+          )}
 
-      {dialog.kind === 'custom' && (
-        <Modal title="Custom service" onClose={() => setDialog({ kind: 'none' })}>
-          <CustomServiceForm
-            onSave={async (input) => {
-              await saveCustomService(input)
-              setDialog({ kind: 'none' })
-            }}
-          />
-        </Modal>
-      )}
+          {dialog.kind === 'custom' && (
+            <CustomServiceForm
+              onSave={async (input) => {
+                await saveCustomService(input)
+                closeDialog()
+              }}
+            />
+          )}
 
-      {dialog.kind === 'search-providers' && (
-        <Modal title="Search providers" onClose={() => setDialog({ kind: 'none' })}>
-          <SearchProviderDialog
-            providers={config.searchProviders}
-            activeProviderId={config.activeSearchProviderId}
-            onSave={saveSearchProvider}
-            onAdd={createSearchProvider}
-            onSetActive={changeActiveSearchProvider}
-          />
+          {dialog.kind === 'search-providers' && (
+            <SearchProviderDialog
+              providers={config.searchProviders}
+              activeProviderId={config.activeSearchProviderId}
+              onSave={saveSearchProvider}
+              onAdd={createSearchProvider}
+              onSetActive={changeActiveSearchProvider}
+            />
+          )}
         </Modal>
       )}
     </div>

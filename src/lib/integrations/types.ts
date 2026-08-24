@@ -16,10 +16,27 @@ export type QnapIntegration = {
   password: string
 }
 
-export type ServiceIntegration = ApiKeyIntegration | QnapIntegration
+export type HttpHealthIntegration = {
+  kind: 'http-health'
+  path: string
+}
+
+export type ServiceIntegration = ApiKeyIntegration | QnapIntegration | HttpHealthIntegration
 
 export function isQnapIntegration(integration: ServiceIntegration): integration is QnapIntegration {
   return integration.kind === 'qnap'
+}
+
+export function isHttpHealthIntegration(
+  integration: ServiceIntegration,
+): integration is HttpHealthIntegration {
+  return integration.kind === 'http-health'
+}
+
+export function isApiKeyIntegration(
+  integration: ServiceIntegration,
+): integration is ApiKeyIntegration {
+  return !isQnapIntegration(integration) && !isHttpHealthIntegration(integration)
 }
 
 export type LiveResponse = {
