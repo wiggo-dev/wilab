@@ -1,7 +1,8 @@
 import { apiKeyAdapter } from './adapter'
+import { trimBase } from './upstream-request'
 
 export function metricsUrl(serviceUrl: string): string {
-  return `${serviceUrl.replace(/\/$/, '')}/metrics`
+  return `${trimBase(serviceUrl)}/metrics`
 }
 
 function monitorKey(labels: string): string | null {

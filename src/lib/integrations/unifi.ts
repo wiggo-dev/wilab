@@ -1,11 +1,8 @@
 import { apiKeyAdapter } from './adapter'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { getJson, trimBase } from './upstream-request'
 
 export function integrationBase(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/proxy/network/integration/v1`
+  return `${trimBase(serviceUrl)}/proxy/network/integration/v1`
 }
 
 export function sitesUrl(serviceUrl: string): string {
@@ -76,27 +73,20 @@ export async function fetchUniFiGlance(
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
-  const sitesResponse = await fetchImpl(sitesUrl(serviceUrl), {
-    headers: authHeaders(apiKey),
+  const headers = authHeaders(apiKey)
+  const sitesBody = await getJson<UniFiSitesResponse>(sitesUrl(serviceUrl), {
+    headers,
+    fetch: fetchImpl,
+    label: 'UniFi sites',
   })
-
-  if (!sitesResponse.ok) {
-    throw new Error(`UniFi sites failed: ${sitesResponse.status}`)
-  }
-
-  const sitesBody = (await sitesResponse.json()) as UniFiSitesResponse
   const sites = unwrapList<UniFiSite>(sitesBody, 'sites')
   const siteId = pickSiteId(sites)
 
-  const clientsResponse = await fetchImpl(clientsUrl(serviceUrl, siteId), {
-    headers: authHeaders(apiKey),
+  const clientsBody = await getJson<UniFiClientsResponse>(clientsUrl(serviceUrl, siteId), {
+    headers,
+    fetch: fetchImpl,
+    label: 'UniFi clients',
   })
-
-  if (!clientsResponse.ok) {
-    throw new Error(`UniFi clients failed: ${clientsResponse.status}`)
-  }
-
-  const clientsBody = (await clientsResponse.json()) as UniFiClientsResponse
   return formatUniFiGlance(countClients(clientsBody))
 }
 

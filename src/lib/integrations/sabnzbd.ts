@@ -1,8 +1,5 @@
 import { apiKeyAdapter } from './adapter'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { getJson, trimBase } from './upstream-request'
 
 export function queueApiUrl(serviceUrl: string, apiKey: string): string {
   const params = new URLSearchParams({
@@ -10,7 +7,7 @@ export function queueApiUrl(serviceUrl: string, apiKey: string): string {
     output: 'json',
     apikey: apiKey,
   })
-  return `${apiBase(serviceUrl)}/api?${params}`
+  return `${trimBase(serviceUrl)}/api?${params}`
 }
 
 export type SabnzbdQueueState = {
@@ -46,13 +43,13 @@ export async function fetchSabnzbdGlance(
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
-  const response = await fetchImpl(queueApiUrl(serviceUrl, apiKey))
-
-  if (!response.ok) {
-    throw new Error(`SABnzbd queue failed: ${response.status}`)
-  }
-
-  const body = (await response.json()) as { queue?: Partial<SabnzbdQueueState> }
+  const body = await getJson<{ queue?: Partial<SabnzbdQueueState> }>(
+    queueApiUrl(serviceUrl, apiKey),
+    {
+      fetch: fetchImpl,
+      label: 'SABnzbd queue',
+    },
+  )
   return formatSabnzbdGlance(parseSabnzbdQueue(body))
 }
 

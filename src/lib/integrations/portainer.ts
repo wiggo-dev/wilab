@@ -1,15 +1,12 @@
 import { apiKeyAdapter } from './adapter'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { getJson, trimBase } from './upstream-request'
 
 export function endpointsUrl(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/api/endpoints`
+  return `${trimBase(serviceUrl)}/api/endpoints`
 }
 
 export function containersUrl(serviceUrl: string, endpointId: number): string {
-  return `${apiBase(serviceUrl)}/api/endpoints/${endpointId}/docker/containers/json?all=true`
+  return `${trimBase(serviceUrl)}/api/endpoints/${endpointId}/docker/containers/json?all=true`
 }
 
 type DockerSnapshot = {
@@ -81,15 +78,11 @@ async function fetchEndpointContainers(
   endpointId: number,
   fetchImpl: typeof fetch,
 ): Promise<DockerContainer[]> {
-  const response = await fetchImpl(containersUrl(serviceUrl, endpointId), {
+  return getJson<DockerContainer[]>(containersUrl(serviceUrl, endpointId), {
     headers: { 'X-API-Key': apiKey },
+    fetch: fetchImpl,
+    label: 'Portainer containers',
   })
-
-  if (!response.ok) {
-    throw new Error(`Portainer containers failed: ${response.status}`)
-  }
-
-  return (await response.json()) as DockerContainer[]
 }
 
 async function sumContainersAcrossEndpoints(
@@ -120,15 +113,11 @@ export async function fetchPortainerGlance(
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
-  const response = await fetchImpl(endpointsUrl(serviceUrl), {
+  const endpoints = await getJson<PortainerEndpoint[]>(endpointsUrl(serviceUrl), {
     headers: { 'X-API-Key': apiKey },
+    fetch: fetchImpl,
+    label: 'Portainer endpoints',
   })
-
-  if (!response.ok) {
-    throw new Error(`Portainer endpoints failed: ${response.status}`)
-  }
-
-  const endpoints = (await response.json()) as PortainerEndpoint[]
   let counts = sumPortainerSnapshots(endpoints)
 
   if (counts.total === 0 && counts.running === 0 && counts.unhealthy === 0) {

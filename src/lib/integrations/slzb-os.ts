@@ -1,11 +1,8 @@
 import { apiKeyAdapter } from './adapter'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { getJson, trimBase } from './upstream-request'
 
 export function haSensorsUrl(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/ha_sensors`
+  return `${trimBase(serviceUrl)}/ha_sensors`
 }
 
 export type SlzbSensors = {
@@ -48,15 +45,11 @@ export async function fetchSlzbOsGlance(
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
-  const response = await fetchImpl(haSensorsUrl(serviceUrl), {
+  const sensors = await getJson<SlzbSensors>(haSensorsUrl(serviceUrl), {
     headers: requestHeaders(apiKey),
+    fetch: fetchImpl,
+    label: 'SLZB-OS sensors',
   })
-
-  if (!response.ok) {
-    throw new Error(`SLZB-OS sensors failed: ${response.status}`)
-  }
-
-  const sensors = (await response.json()) as SlzbSensors
   return formatSlzbOsGlance(sensors)
 }
 

@@ -1,11 +1,8 @@
 import { apiKeyAdapter } from './adapter'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { getJson, trimBase } from './upstream-request'
 
 export function statisticsUrl(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/api/server/statistics`
+  return `${trimBase(serviceUrl)}/api/server/statistics`
 }
 
 type ServerStatistics = {
@@ -22,18 +19,14 @@ export async function fetchImmichGlance(
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
-  const response = await fetchImpl(statisticsUrl(serviceUrl), {
+  const stats = await getJson<ServerStatistics>(statisticsUrl(serviceUrl), {
     headers: {
       'x-api-key': apiKey,
       Accept: 'application/json',
     },
+    fetch: fetchImpl,
+    label: 'Immich statistics',
   })
-
-  if (!response.ok) {
-    throw new Error(`Immich statistics failed: ${response.status}`)
-  }
-
-  const stats = (await response.json()) as ServerStatistics
   return formatImmichGlance(stats)
 }
 

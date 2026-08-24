@@ -1,11 +1,8 @@
 import { apiKeyAdapter } from './adapter'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { getJson, trimBase } from './upstream-request'
 
 export function statesUrl(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/api/states`
+  return `${trimBase(serviceUrl)}/api/states`
 }
 
 type HomeAssistantState = {
@@ -28,15 +25,11 @@ export async function fetchHomeAssistantGlance(
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
-  const response = await fetchImpl(statesUrl(serviceUrl), {
+  const states = await getJson<HomeAssistantState[]>(statesUrl(serviceUrl), {
     headers: { Authorization: `Bearer ${apiKey}` },
+    fetch: fetchImpl,
+    label: 'Home Assistant states',
   })
-
-  if (!response.ok) {
-    throw new Error(`Home Assistant states failed: ${response.status}`)
-  }
-
-  const states = (await response.json()) as HomeAssistantState[]
   return formatHomeAssistantGlance(countLightsOn(states))
 }
 

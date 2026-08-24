@@ -1,15 +1,12 @@
 import { apiKeyAdapter } from './adapter'
-
-function apiBase(serviceUrl: string): string {
-  return serviceUrl.replace(/\/$/, '')
-}
+import { getJson, trimBase } from './upstream-request'
 
 export function queueStatusUrl(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/api/v3/queue/status`
+  return `${trimBase(serviceUrl)}/api/v3/queue/status`
 }
 
 export function wantedMissingUrl(serviceUrl: string): string {
-  return `${apiBase(serviceUrl)}/api/v3/wanted/missing?page=1&pageSize=1`
+  return `${trimBase(serviceUrl)}/api/v3/wanted/missing?page=1&pageSize=1`
 }
 
 export function formatArrGlance(counts: { queue: number; missing: number }): string {
@@ -29,41 +26,23 @@ type WantedMissingResponse = {
   totalRecords?: number
 }
 
-async function fetchJson<T>(
-  url: string,
-  apiKey: string,
-  fetchImpl: typeof fetch,
-  errorLabel: string,
-): Promise<T> {
-  const response = await fetchImpl(url, {
-    headers: { 'X-Api-Key': apiKey },
-  })
-
-  if (!response.ok) {
-    throw new Error(`${errorLabel} failed: ${response.status}`)
-  }
-
-  return response.json() as Promise<T>
-}
-
 export async function fetchArrGlance(
   serviceUrl: string,
   apiKey: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
+  const headers = { 'X-Api-Key': apiKey }
   const [queueStatus, missing] = await Promise.all([
-    fetchJson<QueueStatusResponse>(
-      queueStatusUrl(serviceUrl),
-      apiKey,
-      fetchImpl,
-      'Arr queue status',
-    ),
-    fetchJson<WantedMissingResponse>(
-      wantedMissingUrl(serviceUrl),
-      apiKey,
-      fetchImpl,
-      'Arr wanted missing',
-    ),
+    getJson<QueueStatusResponse>(queueStatusUrl(serviceUrl), {
+      headers,
+      fetch: fetchImpl,
+      label: 'Arr queue status',
+    }),
+    getJson<WantedMissingResponse>(wantedMissingUrl(serviceUrl), {
+      headers,
+      fetch: fetchImpl,
+      label: 'Arr wanted missing',
+    }),
   ])
 
   return formatArrGlance({
