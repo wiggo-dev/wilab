@@ -10,6 +10,7 @@ import {
 } from '@/lib/config/import'
 import { createServiceFromCatalog } from '@/lib/config/mutations'
 import type { Service, WilabConfig } from '@/lib/config/types'
+import { createId } from '@/lib/id'
 import { useWilabConfig } from '@/hooks/useWilabConfig'
 import { useLiveGlances } from '@/hooks/useLiveGlances'
 import { useReorderDrag } from '@/hooks/useReorderDrag'
@@ -113,7 +114,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   }
 
   function pickCatalogEntry(entry: CatalogEntry) {
-    const service = createServiceFromCatalog(entry, crypto.randomUUID())
+    const service = createServiceFromCatalog(entry, createId())
     setDialog({ kind: 'edit-new', service })
   }
 

@@ -17,6 +17,7 @@ import {
 } from '@/lib/config/mutations'
 import { CONFIG_FLUSH_DEBOUNCE_MS, persistConfig } from '@/lib/config/persist'
 import type { SearchProvider, Service, WilabConfig } from '@/lib/config/types'
+import { createId } from '@/lib/id'
 import { resolveConfigForDisplay } from '@/lib/landing/resolve-services'
 
 export function useWilabConfig(initialConfig: WilabConfig) {
@@ -58,7 +59,7 @@ export function useWilabConfig(initialConfig: WilabConfig) {
 
   const addFromCatalog = useCallback(
     async (entry: CatalogEntry) => {
-      const id = crypto.randomUUID()
+      const id = createId()
       const { config: next, serviceId } = addServiceFromCatalog(configRef.current, entry, id)
       await flushImmediate(next)
       return serviceId
@@ -76,7 +77,7 @@ export function useWilabConfig(initialConfig: WilabConfig) {
   const saveCustomService = useCallback(
     async (input: { name: string; url: string; logo: string; tags: string[] }) => {
       const service = createCustomService({
-        id: crypto.randomUUID(),
+        id: createId(),
         ...input,
       })
       await flushImmediate(addService(configRef.current, service))

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { SearchProvider } from '@/lib/config/types'
+import { createId } from '@/lib/id'
 
 export function SearchProviderDialog({
   providers,
@@ -89,7 +90,7 @@ export function SearchProviderDialog({
           type="button"
           className="rounded-lg bg-sky-400 px-3 py-1.5 text-sm text-black"
           onClick={() => {
-            const id = `custom-${crypto.randomUUID().slice(0, 8)}`
+            const id = `custom-${createId().slice(0, 8)}`
             void onAdd({ id, name: newName, template: newTemplate })
             setNewName('')
           }}
