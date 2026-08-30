@@ -8,10 +8,22 @@ import {
   parseConfigImport,
   summarizeConfigImport,
 } from '@/lib/config/import'
-import { createServiceFromCatalog } from '@/lib/config/mutations'
+import {
+  addSearchProvider,
+  addService,
+  createCustomService,
+  createServiceFromCatalog,
+  removeService,
+  reorderGrid,
+  reorderPinned,
+  setActiveSearchProvider,
+  togglePin,
+  updateSearchProvider,
+  updateService,
+} from '@/lib/config/mutations'
 import type { Service, WilabConfig } from '@/lib/config/types'
 import { createId } from '@/lib/id'
-import { useWilabConfig } from '@/hooks/useWilabConfig'
+import { useConfigSession } from '@/hooks/useConfigSession'
 import { useLiveGlances } from '@/hooks/useLiveGlances'
 import { useReorderDrag } from '@/hooks/useReorderDrag'
 import { allTags, buildSearchUrl, gridServices, pinnedServices } from '@/lib/landing/view-model'
@@ -39,23 +51,8 @@ type LandingPageProps = {
 }
 
 export function LandingPage({ config: initialConfig, catalog }: LandingPageProps) {
-  const {
-    config,
-    rawConfig,
-    editMode,
-    setEditMode,
-    saveNewService,
-    saveCustomService,
-    saveService,
-    deleteService,
-    pinService,
-    dragReorderGrid,
-    dragReorderPinned,
-    changeActiveSearchProvider,
-    saveSearchProvider,
-    createSearchProvider,
-    replaceConfig,
-  } = useWilabConfig(initialConfig)
+  const { config: rawConfig, displayConfig: config, editMode, setEditMode, apply } =
+    useConfigSession(initialConfig)
   const glanceRefreshKey = config.services
     .map((service) => `${service.id}:${JSON.stringify(service.integration)}:${service.url}`)
     .join('|')
@@ -70,12 +67,14 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const pinnedDrag = useReorderDrag({
     zone: 'pinned',
     order: config.pinnedOrder,
-    onCommit: dragReorderPinned,
+    onCommit: (id, beforeId) =>
+      void apply((current) => reorderPinned(current, id, beforeId), { debounce: true }),
   })
   const gridDrag = useReorderDrag({
     zone: 'grid',
     order: config.gridOrder,
-    onCommit: dragReorderGrid,
+    onCommit: (id, beforeId) =>
+      void apply((current) => reorderGrid(current, id, beforeId), { debounce: true }),
   })
 
   const tags = useMemo(() => allTags(config.services), [config.services])
@@ -170,7 +169,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
 
   async function confirmImport() {
     if (dialog.kind !== 'confirm-import') return
-    await replaceConfig(dialog.config)
+    await apply(() => dialog.config)
     setImportError(null)
     closeDialog()
   }
@@ -178,7 +177,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   async function confirmDelete() {
     if (!deletingService) return
     const id = deletingService.id
-    await deleteService(id)
+    await apply((current) => removeService(current, id))
     setDialog({ kind: 'none' })
   }
 
@@ -198,7 +197,9 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
             <select
               className="bg-transparent px-3 text-sm outline-none"
               value={config.activeSearchProviderId}
-              onChange={(event) => void changeActiveSearchProvider(event.target.value)}
+              onChange={(event) =>
+                void apply((current) => setActiveSearchProvider(current, event.target.value))
+              }
               aria-label="Search provider"
             >
               {config.searchProviders.map((provider) => (
@@ -290,7 +291,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                   isDropTarget={pinnedDrag.isDropTarget(service.id)}
                   onTagClick={toggleTag}
                   onEdit={() => setDialog({ kind: 'edit', id: service.id })}
-                  onTogglePin={() => void pinService(service.id)}
+                  onTogglePin={() => void apply((current) => togglePin(current, service.id))}
                   onDelete={() => setDialog({ kind: 'confirm-delete', id: service.id })}
                   onDragBegin={(_zone, id) => pinnedDrag.begin(id)}
                   onDragHover={(_zone, id) => pinnedDrag.hover(id)}
@@ -317,7 +318,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                   isDropTarget={gridDrag.isDropTarget(service.id)}
                   onTagClick={toggleTag}
                   onEdit={() => setDialog({ kind: 'edit', id: service.id })}
-                  onTogglePin={() => void pinService(service.id)}
+                  onTogglePin={() => void apply((current) => togglePin(current, service.id))}
                   onDelete={() => setDialog({ kind: 'confirm-delete', id: service.id })}
                   onDragBegin={(_zone, id) => gridDrag.begin(id)}
                   onDragHover={(_zone, id) => gridDrag.hover(id)}
@@ -361,15 +362,17 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
               removeLabel={editingIsNew ? 'Cancel' : 'Remove'}
               onSave={async (patch) => {
                 if (editingIsNew) {
-                  await saveNewService({ ...editingService, ...patch })
+                  await apply((current) =>
+                    addService(current, { ...editingService, ...patch }),
+                  )
                 } else {
-                  await saveService(editingService.id, patch)
+                  await apply((current) => updateService(current, editingService.id, patch))
                 }
                 closeDialog()
               }}
               onRemove={async () => {
                 if (!editingIsNew) {
-                  await deleteService(editingService.id)
+                  await apply((current) => removeService(current, editingService.id))
                 }
                 closeDialog()
               }}
@@ -441,7 +444,15 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           {dialog.kind === 'custom' && (
             <CustomServiceForm
               onSave={async (input) => {
-                await saveCustomService(input)
+                await apply((current) =>
+                  addService(
+                    current,
+                    createCustomService({
+                      id: createId(),
+                      ...input,
+                    }),
+                  ),
+                )
                 closeDialog()
               }}
             />
@@ -451,9 +462,11 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
             <SearchProviderDialog
               providers={config.searchProviders}
               activeProviderId={config.activeSearchProviderId}
-              onSave={saveSearchProvider}
-              onAdd={createSearchProvider}
-              onSetActive={changeActiveSearchProvider}
+              onSave={(id, patch) =>
+                apply((current) => updateSearchProvider(current, id, patch))
+              }
+              onAdd={(provider) => apply((current) => addSearchProvider(current, provider))}
+              onSetActive={(id) => apply((current) => setActiveSearchProvider(current, id))}
             />
           )}
         </Modal>

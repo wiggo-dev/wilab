@@ -4,11 +4,12 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultConfig } from '@/lib/config/defaults'
+import { togglePin, reorderGrid } from '@/lib/config/mutations'
 import { CONFIG_FLUSH_DEBOUNCE_MS } from '@/lib/config/persist'
 import { FIXTURE_CONFIG } from '@/lib/landing/fixtures'
-import { useWilabConfig } from './useWilabConfig'
+import { useConfigSession } from './useConfigSession'
 
-describe('useWilabConfig', () => {
+describe('useConfigSession', () => {
   const fetchMock = vi.fn()
 
   beforeEach(() => {
@@ -23,11 +24,11 @@ describe('useWilabConfig', () => {
     fetchMock.mockReset()
   })
 
-  it('flushes pin changes immediately', async () => {
-    const { result } = renderHook(() => useWilabConfig(FIXTURE_CONFIG))
+  it('flushes immediate apply changes right away', async () => {
+    const { result } = renderHook(() => useConfigSession(FIXTURE_CONFIG))
 
     await act(async () => {
-      await result.current.pinService('svc-sonarr')
+      await result.current.apply((config) => togglePin(config, 'svc-sonarr'))
     })
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
@@ -35,11 +36,14 @@ describe('useWilabConfig', () => {
     expect(body.pinnedOrder).toContain('svc-sonarr')
   })
 
-  it('debounces drag reorder saves', async () => {
-    const { result } = renderHook(() => useWilabConfig(FIXTURE_CONFIG))
+  it('debounces apply when debounce is requested', async () => {
+    const { result } = renderHook(() => useConfigSession(FIXTURE_CONFIG))
 
     act(() => {
-      result.current.dragReorderGrid('svc-infra', 'svc-ha')
+      void result.current.apply(
+        (config) => reorderGrid(config, 'svc-infra', 'svc-ha'),
+        { debounce: true },
+      )
     })
 
     expect(fetchMock).not.toHaveBeenCalled()
@@ -53,7 +57,7 @@ describe('useWilabConfig', () => {
     expect(body.gridOrder[0]).toBe('svc-infra')
   })
 
-  it('replaceConfig persists the full incoming config immediately', async () => {
+  it('apply replaces config immediately when given a full config', async () => {
     const incoming = createDefaultConfig()
     incoming.services = [
       {
@@ -68,14 +72,14 @@ describe('useWilabConfig', () => {
     ]
     incoming.gridOrder = ['imported']
 
-    const { result } = renderHook(() => useWilabConfig(FIXTURE_CONFIG))
+    const { result } = renderHook(() => useConfigSession(FIXTURE_CONFIG))
 
     await act(async () => {
-      await result.current.replaceConfig(incoming)
+      await result.current.apply(() => incoming)
     })
 
-    expect(result.current.rawConfig.services).toHaveLength(1)
-    expect(result.current.rawConfig.services[0]?.id).toBe('imported')
+    expect(result.current.config.services).toHaveLength(1)
+    expect(result.current.config.services[0]?.id).toBe('imported')
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body))
     expect(body.services).toHaveLength(1)
