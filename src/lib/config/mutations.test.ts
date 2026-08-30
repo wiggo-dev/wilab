@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest'
 import type { CatalogEntry } from '@/lib/catalog/types'
 import { FIXTURE_CONFIG } from '@/lib/landing/fixtures'
 import {
+  addHostPreset,
   addSearchProvider,
   addService,
   addServiceFromCatalog,
   createCustomService,
   moveId,
+  removeHostPreset,
   removeService,
   reorderGrid,
   togglePin,
+  updateHostPreset,
   updateSearchProvider,
   updateService,
 } from './mutations'
@@ -109,5 +112,18 @@ describe('config mutations', () => {
     })
     expect(withCustom.searchProviders.at(-1)?.name).toBe('SearXNG')
     expect(withCustom.activeSearchProviderId).toBe('searx')
+  })
+
+  it('adds, updates, and removes host presets', () => {
+    const emptyPresets = { ...FIXTURE_CONFIG, hostPresets: [] as string[] }
+    const withHost = addHostPreset(emptyPresets, 'nas.local')
+    expect(withHost.hostPresets).toEqual(['nas.local'])
+    expect(addHostPreset(withHost, 'nas.local')).toBe(withHost)
+
+    const renamed = updateHostPreset(withHost, 0, '192.168.1.10')
+    expect(renamed.hostPresets).toEqual(['192.168.1.10'])
+
+    const removed = removeHostPreset(renamed, 0)
+    expect(removed.hostPresets).toEqual([])
   })
 })

@@ -28,6 +28,7 @@ describe('parseConfigImport', () => {
     expect(result.config.services).toHaveLength(1)
     expect(result.config.gridOrder).toEqual(['svc-a'])
     expect(result.config.pinnedOrder).toEqual(['svc-a'])
+    expect(result.config.hostPresets).toEqual([])
   })
 
   it('rejects non-JSON', () => {

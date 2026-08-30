@@ -79,6 +79,7 @@ describe('LandingPage', () => {
       pinnedOrder: [],
       searchProviders: DEFAULT_SEARCH_PROVIDERS.map((provider) => ({ ...provider })),
       activeSearchProviderId: 'ddg',
+      hostPresets: [],
     })
 
     render(<LandingPage config={emptyConfig} catalog={catalog} />)
@@ -113,6 +114,39 @@ describe('LandingPage', () => {
       expect(saved.services).toHaveLength(1)
       expect(saved.services[0].catalogId).toBe('sonarr')
     })
+  })
+
+  it('offers host presets when adding a catalog service', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url === '/api/live') {
+        return { ok: true, json: async () => ({ services: {} }) }
+      }
+      return { ok: true }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const emptyConfig = resolveConfigForDisplay({
+      schemaVersion: 1,
+      services: [],
+      gridOrder: [],
+      pinnedOrder: [],
+      searchProviders: DEFAULT_SEARCH_PROVIDERS.map((provider) => ({ ...provider })),
+      activeSearchProviderId: 'ddg',
+      hostPresets: ['nas.local'],
+    })
+
+    render(<LandingPage config={emptyConfig} catalog={catalog} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add service' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Sonarr/i }))
+
+    expect(screen.getByRole('heading', { name: 'Choose host' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'nas.local' }))
+
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('http://nas.local:8989')).toBeTruthy(),
+    )
   })
 
   it('shows a trash control in edit mode and deletes after confirmation', async () => {

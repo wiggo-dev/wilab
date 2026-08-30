@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
+import { catalogUrlUsesHostTemplate, substituteHostInUrl } from '@/lib/catalog/host-template'
 import type { DisplayService } from '@/lib/config/types'
 import { parseTagsInput } from '@/lib/config/mutations'
 import {
@@ -16,11 +17,13 @@ function canUseHttpHealth(integration: DisplayService['integration']): boolean {
 
 export function ServiceForm({
   service,
+  hostPresets = [],
   onSave,
   onRemove,
   removeLabel = 'Remove',
 }: {
   service: DisplayService
+  hostPresets?: string[]
   onSave: (
     patch: Pick<DisplayService, 'name' | 'url' | 'logo' | 'tags' | 'integration'>,
   ) => void | Promise<void>
@@ -128,6 +131,21 @@ export function ServiceForm({
           required
         />
       </label>
+      {catalogUrlUsesHostTemplate(url) && hostPresets.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+          <span>Use preset:</span>
+          {hostPresets.map((host) => (
+            <button
+              key={host}
+              type="button"
+              className="rounded-full bg-white/10 px-2.5 py-1 hover:bg-white/20"
+              onClick={() => setUrl(substituteHostInUrl(url, host))}
+            >
+              {host}
+            </button>
+          ))}
+        </div>
+      )}
       <label className="text-sm">
         Logo URL
         <input

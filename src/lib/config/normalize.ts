@@ -13,6 +13,12 @@ function dedupePreservingOrder(ids: string[]): string[] {
   return result
 }
 
+function normalizeHostPresets(presets: string[] | undefined): string[] {
+  if (!presets || presets.length === 0) return []
+  const trimmed = presets.map((host) => host.trim()).filter(Boolean)
+  return dedupePreservingOrder(trimmed)
+}
+
 function pruneOrder(order: string[], knownIds: Set<string>): string[] {
   return dedupePreservingOrder(order.filter((id) => knownIds.has(id)))
 }
@@ -59,6 +65,7 @@ export function normalizeWilabConfig(input: WilabConfig): WilabConfig {
     pinnedOrder,
     searchProviders,
     activeSearchProviderId,
+    hostPresets: normalizeHostPresets(input.hostPresets),
   }
 }
 

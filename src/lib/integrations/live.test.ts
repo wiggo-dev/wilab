@@ -29,6 +29,7 @@ const baseConfig: WilabConfig = {
   pinnedOrder: [],
   searchProviders: [],
   activeSearchProviderId: 'ddg',
+  hostPresets: [],
 }
 
 describe('GlanceEngine', () => {

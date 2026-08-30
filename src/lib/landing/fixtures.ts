@@ -54,4 +54,5 @@ export const FIXTURE_CONFIG: WilabConfig = {
   pinnedOrder: ['svc-ha', 'svc-jellyfin'],
   searchProviders: DEFAULT_SEARCH_PROVIDERS.map((provider) => ({ ...provider })),
   activeSearchProviderId: 'ddg',
+  hostPresets: ['nas.local'],
 }

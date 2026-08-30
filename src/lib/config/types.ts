@@ -25,6 +25,7 @@ export type WilabConfig = {
   pinnedOrder: string[]
   searchProviders: SearchProvider[]
   activeSearchProviderId: string
+  hostPresets: string[]
 }
 
 export type DisplayService = Service & {

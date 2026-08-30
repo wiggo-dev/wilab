@@ -3,21 +3,25 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import type { CatalogEntry } from '@/lib/catalog/types'
+import { catalogUrlUsesHostTemplate, substituteHostInUrl } from '@/lib/catalog/host-template'
 import {
   configExportJson,
   parseConfigImport,
   summarizeConfigImport,
 } from '@/lib/config/import'
 import {
+  addHostPreset,
   addSearchProvider,
   addService,
   createCustomService,
   createServiceFromCatalog,
+  removeHostPreset,
   removeService,
   reorderGrid,
   reorderPinned,
   setActiveSearchProvider,
   togglePin,
+  updateHostPreset,
   updateSearchProvider,
   updateService,
 } from '@/lib/config/mutations'
@@ -29,6 +33,8 @@ import { useReorderDrag } from '@/hooks/useReorderDrag'
 import { allTags, buildSearchUrl, gridServices, pinnedServices } from '@/lib/landing/view-model'
 import { CatalogPicker } from './CatalogPicker'
 import { CustomServiceForm } from './CustomServiceForm'
+import { HostPresetPicker } from './HostPresetPicker'
+import { HostPresetsDialog } from './HostPresetsDialog'
 import { Modal } from './Modal'
 import { SearchProviderDialog } from './SearchProviderDialog'
 import { ServiceForm } from './ServiceForm'
@@ -40,6 +46,8 @@ type DialogState =
   | { kind: 'edit'; id: string }
   | { kind: 'edit-new'; service: Service }
   | { kind: 'add' }
+  | { kind: 'pick-host'; entry: CatalogEntry }
+  | { kind: 'host-presets' }
   | { kind: 'custom' }
   | { kind: 'search-providers' }
   | { kind: 'confirm-delete'; id: string }
@@ -112,9 +120,20 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     window.open(url, '_blank', 'noopener')
   }
 
-  function pickCatalogEntry(entry: CatalogEntry) {
+  function openCatalogServiceDraft(entry: CatalogEntry, host: string | null) {
     const service = createServiceFromCatalog(entry, createId())
+    if (host) {
+      service.url = substituteHostInUrl(service.url, host)
+    }
     setDialog({ kind: 'edit-new', service })
+  }
+
+  function pickCatalogEntry(entry: CatalogEntry) {
+    if (catalogUrlUsesHostTemplate(entry.defaultUrl) && rawConfig.hostPresets.length > 0) {
+      setDialog({ kind: 'pick-host', entry })
+      return
+    }
+    openCatalogServiceDraft(entry, null)
   }
 
   const closeDialog = useCallback(() => {
@@ -127,7 +146,11 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const dialogTitle =
     dialog.kind === 'add'
       ? 'Add a service'
-      : dialog.kind === 'custom'
+      : dialog.kind === 'pick-host'
+        ? 'Choose host'
+        : dialog.kind === 'host-presets'
+          ? 'Host presets'
+          : dialog.kind === 'custom'
         ? 'Custom service'
         : dialog.kind === 'search-providers'
           ? 'Search providers'
@@ -218,6 +241,13 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
           </form>
           {editMode && (
             <>
+              <button
+                type="button"
+                className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20"
+                onClick={() => setDialog({ kind: 'host-presets' })}
+              >
+                Host presets
+              </button>
               <button
                 type="button"
                 className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs hover:bg-white/20"
@@ -355,10 +385,21 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
             />
           )}
 
+          {dialog.kind === 'pick-host' && (
+            <HostPresetPicker
+              entry={dialog.entry}
+              presets={rawConfig.hostPresets}
+              onPick={(host) => openCatalogServiceDraft(dialog.entry, host)}
+              onManual={() => openCatalogServiceDraft(dialog.entry, null)}
+              onBack={() => setDialog({ kind: 'add' })}
+            />
+          )}
+
           {(dialog.kind === 'edit' || dialog.kind === 'edit-new') && editingService && (
             <ServiceForm
               key={editingService.id}
               service={editingService}
+              hostPresets={rawConfig.hostPresets}
               removeLabel={editingIsNew ? 'Cancel' : 'Remove'}
               onSave={async (patch) => {
                 if (editingIsNew) {
@@ -455,6 +496,15 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                 )
                 closeDialog()
               }}
+            />
+          )}
+
+          {dialog.kind === 'host-presets' && (
+            <HostPresetsDialog
+              presets={rawConfig.hostPresets}
+              onAdd={(host) => apply((current) => addHostPreset(current, host))}
+              onUpdate={(index, host) => apply((current) => updateHostPreset(current, index, host))}
+              onRemove={(index) => apply((current) => removeHostPreset(current, index))}
             />
           )}
 

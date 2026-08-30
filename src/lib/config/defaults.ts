@@ -20,5 +20,6 @@ export function createDefaultConfig(): WilabConfig {
     pinnedOrder: [],
     searchProviders: DEFAULT_SEARCH_PROVIDERS.map((provider) => ({ ...provider })),
     activeSearchProviderId: 'ddg',
+    hostPresets: [],
   }
 }

@@ -150,3 +150,32 @@ export function parseTagsInput(value: string): string[] {
     .map((tag) => tag.trim())
     .filter(Boolean)
 }
+
+export function addHostPreset(config: WilabConfig, host: string): WilabConfig {
+  const trimmed = host.trim()
+  if (!trimmed || config.hostPresets.includes(trimmed)) return config
+  return { ...config, hostPresets: [...config.hostPresets, trimmed] }
+}
+
+export function updateHostPreset(config: WilabConfig, index: number, host: string): WilabConfig {
+  const trimmed = host.trim()
+  if (index < 0 || index >= config.hostPresets.length) return config
+  if (!trimmed) return removeHostPreset(config, index)
+  const next = config.hostPresets.map((entry, i) => (i === index ? trimmed : entry))
+  const seen = new Set<string>()
+  const deduped: string[] = []
+  for (const entry of next) {
+    if (seen.has(entry)) continue
+    seen.add(entry)
+    deduped.push(entry)
+  }
+  return { ...config, hostPresets: deduped }
+}
+
+export function removeHostPreset(config: WilabConfig, index: number): WilabConfig {
+  if (index < 0 || index >= config.hostPresets.length) return config
+  return {
+    ...config,
+    hostPresets: config.hostPresets.filter((_, i) => i !== index),
+  }
+}

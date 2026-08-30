@@ -27,6 +27,7 @@ describe('ConfigStore', () => {
     expect(config.pinnedOrder).toEqual([])
     expect(config.activeSearchProviderId).toBe('ddg')
     expect(config.searchProviders).toEqual(DEFAULT_SEARCH_PROVIDERS)
+    expect(config.hostPresets).toEqual([])
 
     const onDisk = JSON.parse(await readFile(join(dataDir, 'config.json'), 'utf8'))
     expect(onDisk.schemaVersion).toBe(1)
@@ -111,6 +112,7 @@ describe('ConfigStore', () => {
     const config = await store.load()
     expect(config.gridOrder).toEqual(['svc-1'])
     expect(config.pinnedOrder).toEqual([])
+    expect(config.hostPresets).toEqual([])
 
     const onDisk = JSON.parse(await readFile(join(dataDir, 'config.json'), 'utf8'))
     expect(onDisk.gridOrder).toEqual(['svc-1'])

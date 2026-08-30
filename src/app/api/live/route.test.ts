@@ -74,6 +74,7 @@ describe('/api/live', () => {
           pinnedOrder: [],
           searchProviders: [],
           activeSearchProviderId: 'ddg',
+          hostPresets: [],
         }),
       }),
     )

@@ -29,6 +29,7 @@ const base: WilabConfig = {
   pinnedOrder: ['a'],
   searchProviders: DEFAULT_SEARCH_PROVIDERS,
   activeSearchProviderId: 'ddg',
+  hostPresets: [],
 }
 
 describe('normalizeWilabConfig', () => {
@@ -81,5 +82,21 @@ describe('normalizeWilabConfig', () => {
 
     expect(normalized.searchProviders).toEqual(DEFAULT_SEARCH_PROVIDERS)
     expect(normalized.activeSearchProviderId).toBe('ddg')
+  })
+
+  it('normalizes host presets', () => {
+    const normalized = normalizeWilabConfig({
+      ...base,
+      hostPresets: [' nas.local ', '192.168.1.10', 'nas.local', ''],
+    })
+
+    expect(normalized.hostPresets).toEqual(['nas.local', '192.168.1.10'])
+  })
+
+  it('defaults missing host presets to an empty array', () => {
+    const { hostPresets: _ignored, ...withoutPresets } = base
+    const normalized = normalizeWilabConfig(withoutPresets as WilabConfig)
+
+    expect(normalized.hostPresets).toEqual([])
   })
 })
