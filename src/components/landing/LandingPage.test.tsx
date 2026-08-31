@@ -63,6 +63,49 @@ describe('LandingPage', () => {
     )
   })
 
+  it('filters pinned and main-grid tiles by the search query', () => {
+    render(<LandingPage config={config} catalog={catalog} />)
+
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'son' } })
+
+    expect(screen.getByRole('link', { name: /Sonarr/i })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Home Assistant/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Jellyfin/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Radarr/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Router/i })).toBeNull()
+    expect(screen.getAllByText('No services match')).toHaveLength(1)
+  })
+
+  it('restores tiles when the search query is cleared', () => {
+    render(<LandingPage config={config} catalog={catalog} />)
+
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'son' } })
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: '' } })
+
+    expect(screen.getAllByText('Home Assistant').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole('link', { name: /Router/i })).toBeTruthy()
+    expect(screen.queryByText('No services match')).toBeNull()
+  })
+
+  it('intersects the tile query with the active tag filter', () => {
+    render(<LandingPage config={config} catalog={catalog} />)
+
+    fireEvent.click(within(screen.getByRole('banner')).getByRole('button', { name: 'media' }))
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'son' } })
+
+    expect(screen.getByRole('link', { name: /Sonarr/i })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Jellyfin/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Radarr/i })).toBeNull()
+  })
+
+  it('focuses the search input when / is pressed', () => {
+    render(<LandingPage config={config} catalog={catalog} />)
+
+    fireEvent.keyDown(window, { key: '/' })
+
+    expect(screen.getByLabelText('Search query')).toBe(document.activeElement)
+  })
+
   it('opens a draft catalog service and only persists on Save', async () => {
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
       if (url === '/api/live') {

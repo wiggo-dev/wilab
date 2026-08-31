@@ -6,6 +6,8 @@ import {
   gridServices,
   orderServices,
   pinnedServices,
+  filterServicesByTileQuery,
+  serviceMatchesTileQuery,
 } from './view-model'
 
 describe('landing view-model', () => {
@@ -65,6 +67,30 @@ describe('landing view-model', () => {
 
   it('collects sorted unique tags', () => {
     expect(allTags(services)).toEqual(['home', 'infra', 'media'])
+  })
+
+  it('matches a service by name or tag substring, ignoring case and surrounding space', () => {
+    const sonarr = services.find((service) => service.id === 'svc-sonarr')!
+    const ha = services.find((service) => service.id === 'svc-ha')!
+
+    expect(serviceMatchesTileQuery(sonarr, 'son')).toBe(true)
+    expect(serviceMatchesTileQuery(sonarr, '  SONARR  ')).toBe(true)
+    expect(serviceMatchesTileQuery(sonarr, 'media')).toBe(true)
+    expect(serviceMatchesTileQuery(ha, 'media')).toBe(false)
+    expect(serviceMatchesTileQuery(ha, '')).toBe(true)
+    expect(serviceMatchesTileQuery(ha, '   ')).toBe(true)
+  })
+
+  it('intersects tag-filtered grid results with a tile query', () => {
+    const mediaGrid = gridServices(services, gridOrder, 'media')
+    expect(filterServicesByTileQuery(mediaGrid, 'son').map((service) => service.name)).toEqual([
+      'Sonarr',
+    ])
+    expect(filterServicesByTileQuery(mediaGrid, '').map((service) => service.name)).toEqual([
+      'Jellyfin',
+      'Sonarr',
+      'Radarr',
+    ])
   })
 
   it('builds a search provider URL from the active template', () => {

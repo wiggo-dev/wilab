@@ -28,6 +28,17 @@ export function allTags(services: Service[]): string[] {
   return [...new Set(services.flatMap((service) => service.tags))].sort()
 }
 
+export function serviceMatchesTileQuery(service: Service, query: string): boolean {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return true
+  if (service.name.toLowerCase().includes(needle)) return true
+  return service.tags.some((tag) => tag.toLowerCase().includes(needle))
+}
+
+export function filterServicesByTileQuery(services: Service[], query: string): Service[] {
+  return services.filter((service) => serviceMatchesTileQuery(service, query))
+}
+
 export function buildSearchUrl(template: string, query: string): string | null {
   const trimmed = query.trim()
   if (!trimmed) return null

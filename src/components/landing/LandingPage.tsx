@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import type { CatalogEntry } from '@/lib/catalog/types'
 import { catalogUrlUsesHostTemplate, substituteHostInUrl } from '@/lib/catalog/host-template'
@@ -30,7 +30,7 @@ import { createId } from '@/lib/id'
 import { useConfigSession } from '@/hooks/useConfigSession'
 import { useLiveGlances } from '@/hooks/useLiveGlances'
 import { useReorderDrag } from '@/hooks/useReorderDrag'
-import { allTags, buildSearchUrl, gridServices, pinnedServices } from '@/lib/landing/view-model'
+import { allTags, buildSearchUrl, filterServicesByTileQuery, gridServices, pinnedServices } from '@/lib/landing/view-model'
 import { CatalogPicker } from './CatalogPicker'
 import { CustomServiceForm } from './CustomServiceForm'
 import { HostPresetPicker } from './HostPresetPicker'
@@ -71,6 +71,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
   const [importError, setImportError] = useState<string | null>(null)
   const importInputRef = useRef<HTMLInputElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const pinnedDrag = useReorderDrag({
     zone: 'pinned',
@@ -88,13 +89,22 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const tags = useMemo(() => allTags(config.services), [config.services])
   // Stable DOM order (committed). Visual reorder uses CSS `order` from the hook.
   const pinned = useMemo(
-    () => pinnedServices(config.services, pinnedDrag.sourceOrder),
-    [config.services, pinnedDrag.sourceOrder],
+    () =>
+      filterServicesByTileQuery(
+        pinnedServices(config.services, pinnedDrag.sourceOrder),
+        searchQuery,
+      ),
+    [config.services, pinnedDrag.sourceOrder, searchQuery],
   )
   const grid = useMemo(
-    () => gridServices(config.services, gridDrag.sourceOrder, activeTag),
-    [activeTag, config.services, gridDrag.sourceOrder],
+    () =>
+      filterServicesByTileQuery(
+        gridServices(config.services, gridDrag.sourceOrder, activeTag),
+        searchQuery,
+      ),
+    [activeTag, config.services, gridDrag.sourceOrder, searchQuery],
   )
+  const tileQueryActive = searchQuery.trim().length > 0
 
   const editingService =
     dialog.kind === 'edit'
@@ -119,6 +129,23 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     if (!url) return
     window.open(url, '_blank', 'noopener')
   }
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return
+      const target = event.target
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) {
+          return
+        }
+      }
+      event.preventDefault()
+      searchInputRef.current?.focus()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   function openCatalogServiceDraft(entry: CatalogEntry, host: string | null) {
     const service = createServiceFromCatalog(entry, createId())
@@ -232,8 +259,9 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
               ))}
             </select>
             <input
+              ref={searchInputRef}
               className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-slate-400"
-              placeholder="Search the web"
+              placeholder="Search the web — type to filter tiles"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               aria-label="Search query"
@@ -331,6 +359,9 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                 />
               </div>
             ))}
+            {pinned.length === 0 && tileQueryActive && (
+              <p className="text-sm text-slate-400">No services match</p>
+            )}
           </div>
         </section>
         <section className="mt-5">
@@ -369,6 +400,11 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                 <span className="text-3xl">+</span>
                 <span className="text-xs">Add</span>
               </button>
+            )}
+            {grid.length === 0 && (tileQueryActive || activeTag != null) && (
+              <p className="col-span-full text-sm text-slate-400" style={{ order: 9_000 }}>
+                No services match
+              </p>
             )}
           </div>
         </section>
