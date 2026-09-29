@@ -9,10 +9,25 @@ export function pinnedServices(services: Service[], pinnedOrder: string[]): Serv
   return orderServices(services, pinnedOrder)
 }
 
+export type TagMatchMode = 'and' | 'or'
+
+export function serviceMatchesTags(
+  service: Service,
+  activeTags: readonly string[],
+  mode: TagMatchMode,
+): boolean {
+  if (activeTags.length === 0) return true
+  if (mode === 'and') {
+    return activeTags.every((tag) => service.tags.includes(tag))
+  }
+  return activeTags.some((tag) => service.tags.includes(tag))
+}
+
 export function gridServices(
   services: Service[],
   gridOrder: string[],
-  activeTag: string | null,
+  activeTags: readonly string[] = [],
+  tagMatchMode: TagMatchMode = 'or',
 ): Service[] {
   const effectiveOrder =
     gridOrder.length > 0 ? gridOrder : services.map((service) => service.id)
@@ -21,7 +36,7 @@ export function gridServices(
   const trailing = services.filter((service) => !listed.has(service.id))
   const visible = [...ordered, ...trailing]
 
-  return visible.filter((service) => (activeTag ? service.tags.includes(activeTag) : true))
+  return visible.filter((service) => serviceMatchesTags(service, activeTags, tagMatchMode))
 }
 
 export function allTags(services: Service[]): string[] {

@@ -30,7 +30,14 @@ import { createId } from '@/lib/id'
 import { useConfigSession } from '@/hooks/useConfigSession'
 import { useLiveGlances } from '@/hooks/useLiveGlances'
 import { useReorderDrag } from '@/hooks/useReorderDrag'
-import { allTags, buildSearchUrl, filterServicesByTileQuery, gridServices, pinnedServices } from '@/lib/landing/view-model'
+import {
+  allTags,
+  buildSearchUrl,
+  filterServicesByTileQuery,
+  gridServices,
+  pinnedServices,
+  type TagMatchMode,
+} from '@/lib/landing/view-model'
 import { CatalogPicker } from './CatalogPicker'
 import { CustomServiceForm } from './CustomServiceForm'
 import { HostPresetPicker } from './HostPresetPicker'
@@ -66,7 +73,8 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
     .join('|')
   const { glances, loaded } = useLiveGlances(glanceRefreshKey)
 
-  const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [activeTags, setActiveTags] = useState<string[]>([])
+  const [tagMatchMode, setTagMatchMode] = useState<TagMatchMode>('or')
   const [searchQuery, setSearchQuery] = useState('')
   const [dialog, setDialog] = useState<DialogState>({ kind: 'none' })
   const [importError, setImportError] = useState<string | null>(null)
@@ -99,10 +107,10 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
   const grid = useMemo(
     () =>
       filterServicesByTileQuery(
-        gridServices(config.services, gridDrag.sourceOrder, activeTag),
+        gridServices(config.services, gridDrag.sourceOrder, activeTags, tagMatchMode),
         searchQuery,
       ),
-    [activeTag, config.services, gridDrag.sourceOrder, searchQuery],
+    [activeTags, config.services, gridDrag.sourceOrder, searchQuery, tagMatchMode],
   )
   const tileQueryActive = searchQuery.trim().length > 0
 
@@ -119,7 +127,9 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
       : null
 
   function toggleTag(tag: string) {
-    setActiveTag((current) => (current === tag ? null : tag))
+    setActiveTags((current) =>
+      current.includes(tag) ? current.filter((entry) => entry !== tag) : [...current, tag],
+    )
   }
 
   function submitSearch() {
@@ -320,15 +330,49 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
             {importError}
           </p>
         )}
-        <div className="mx-auto flex max-w-5xl flex-wrap gap-1.5 px-6 pb-2">
-          <TagChip active={activeTag == null} onClick={() => setActiveTag(null)}>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-1.5 px-6 pb-2">
+          <TagChip active={activeTags.length === 0} onClick={() => setActiveTags([])}>
             All
           </TagChip>
           {tags.map((tag) => (
-            <TagChip key={tag} tag={tag} active={activeTag === tag} onClick={() => toggleTag(tag)}>
+            <TagChip
+              key={tag}
+              tag={tag}
+              active={activeTags.includes(tag)}
+              onClick={() => toggleTag(tag)}
+            >
               {tag}
             </TagChip>
           ))}
+          {activeTags.length > 0 && (
+            <>
+              <span className="ml-1 text-[10px] tracking-wide text-slate-500 uppercase">
+                {activeTags.length} selected
+              </span>
+              <div
+                className="ml-1 flex overflow-hidden rounded-full text-[10px] ring-1 ring-white/15"
+                role="group"
+                aria-label="Tag match mode"
+              >
+                <button
+                  type="button"
+                  className={`px-2 py-0.5 ${tagMatchMode === 'or' ? 'bg-white text-black' : 'bg-white/10 text-slate-300 hover:bg-white/20'}`}
+                  aria-pressed={tagMatchMode === 'or'}
+                  onClick={() => setTagMatchMode('or')}
+                >
+                  Any
+                </button>
+                <button
+                  type="button"
+                  className={`px-2 py-0.5 ${tagMatchMode === 'and' ? 'bg-white text-black' : 'bg-white/10 text-slate-300 hover:bg-white/20'}`}
+                  aria-pressed={tagMatchMode === 'and'}
+                  onClick={() => setTagMatchMode('and')}
+                >
+                  All tags
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -342,7 +386,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                   service={service}
                   compact
                   zone="pinned"
-                  activeTag={activeTag}
+                  activeTags={activeTags}
                   editMode={editMode}
                   pinned
                   isDragging={pinnedDrag.isDragging(service.id)}
@@ -372,7 +416,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                 <ServiceTile
                   service={service}
                   zone="grid"
-                  activeTag={activeTag}
+                  activeTags={activeTags}
                   editMode={editMode}
                   pinned={config.pinnedOrder.includes(service.id)}
                   isDragging={gridDrag.isDragging(service.id)}
@@ -401,7 +445,7 @@ export function LandingPage({ config: initialConfig, catalog }: LandingPageProps
                 <span className="text-xs">Add</span>
               </button>
             )}
-            {grid.length === 0 && (tileQueryActive || activeTag != null) && (
+            {grid.length === 0 && (tileQueryActive || activeTags.length > 0) && (
               <p className="col-span-full text-sm text-slate-400" style={{ order: 9_000 }}>
                 No services match
               </p>

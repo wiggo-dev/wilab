@@ -8,4 +8,5 @@ services:
       - ./data:/data
     environment:
       WILAB_DATA_DIR: /data
+      # WILAB_ACCESS_TOKEN: "replace-me"  # optional shared-secret gate
     restart: unless-stopped
