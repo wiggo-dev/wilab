@@ -25,7 +25,7 @@ describe('ServiceTile glance attention', () => {
       <ServiceTile
         service={service}
         zone="grid"
-        activeTag={null}
+        activeTags={[]}
         onTagClick={() => {}}
         glance={{ status: 'healthy', text: '2 unhealthy' }}
       />,
@@ -42,7 +42,7 @@ describe('ServiceTile glance attention', () => {
       <ServiceTile
         service={service}
         zone="pinned"
-        activeTag={null}
+        activeTags={[]}
         onTagClick={() => {}}
         glance={{ status: 'unavailable', text: 'Unavailable' }}
       />,
@@ -59,7 +59,7 @@ describe('ServiceTile glance attention', () => {
       <ServiceTile
         service={service}
         zone="grid"
-        activeTag={null}
+        activeTags={[]}
         onTagClick={() => {}}
         glance={{ status: 'healthy', text: '2/2 up' }}
       />,

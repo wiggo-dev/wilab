@@ -7,6 +7,7 @@ import {
   orderServices,
   pinnedServices,
   filterServicesByTileQuery,
+  serviceMatchesTags,
   serviceMatchesTileQuery,
 } from './view-model'
 
@@ -24,7 +25,7 @@ describe('landing view-model', () => {
   })
 
   it('falls back to all services when grid order is empty', () => {
-    expect(gridServices(services, [], null).map((service) => service.id)).toEqual([
+    expect(gridServices(services, [], []).map((service) => service.id)).toEqual([
       'svc-ha',
       'svc-jellyfin',
       'svc-sonarr',
@@ -34,7 +35,7 @@ describe('landing view-model', () => {
   })
 
   it('appends services missing from the grid order list', () => {
-    expect(gridServices(services, ['svc-ha'], null).map((service) => service.id)).toEqual([
+    expect(gridServices(services, ['svc-ha'], []).map((service) => service.id)).toEqual([
       'svc-ha',
       'svc-jellyfin',
       'svc-sonarr',
@@ -48,20 +49,48 @@ describe('landing view-model', () => {
     expect(pinned).toHaveLength(2)
     expect(pinned.map((service) => service.name)).toEqual(['Home Assistant', 'Jellyfin'])
 
-    const filteredGrid = gridServices(services, gridOrder, 'media')
+    const filteredGrid = gridServices(services, gridOrder, ['media'])
     expect(filteredGrid.map((service) => service.name)).toEqual(['Jellyfin', 'Sonarr', 'Radarr'])
     expect(pinned.map((service) => service.name)).toEqual(['Home Assistant', 'Jellyfin'])
   })
 
   it('narrows the main grid when a tag is active', () => {
-    expect(gridServices(services, gridOrder, null)).toHaveLength(5)
-    expect(gridServices(services, gridOrder, 'media').map((service) => service.name)).toEqual([
+    expect(gridServices(services, gridOrder, [])).toHaveLength(5)
+    expect(gridServices(services, gridOrder, ['media']).map((service) => service.name)).toEqual([
       'Jellyfin',
       'Sonarr',
       'Radarr',
     ])
-    expect(gridServices(services, gridOrder, 'infra').map((service) => service.name)).toEqual([
+    expect(gridServices(services, gridOrder, ['infra']).map((service) => service.name)).toEqual([
       'Router',
+    ])
+  })
+
+  it('OR-matches services that have any selected tag', () => {
+    expect(
+      gridServices(services, gridOrder, ['media', 'infra'], 'or').map((service) => service.name),
+    ).toEqual(['Jellyfin', 'Sonarr', 'Radarr', 'Router'])
+  })
+
+  it('AND-matches services that have every selected tag', () => {
+    const multiTagged = [
+      ...services,
+      {
+        id: 'svc-both',
+        catalogId: null,
+        name: 'Media NAS',
+        url: 'http://nas.lab.lan',
+        logo: '',
+        tags: ['media', 'infra'],
+        integration: null,
+      },
+    ]
+    const order = [...gridOrder, 'svc-both']
+
+    expect(serviceMatchesTags(multiTagged[5]!, ['media', 'infra'], 'and')).toBe(true)
+    expect(serviceMatchesTags(services[1]!, ['media', 'infra'], 'and')).toBe(false)
+    expect(gridServices(multiTagged, order, ['media', 'infra'], 'and').map((s) => s.name)).toEqual([
+      'Media NAS',
     ])
   })
 
@@ -82,7 +111,7 @@ describe('landing view-model', () => {
   })
 
   it('intersects tag-filtered grid results with a tile query', () => {
-    const mediaGrid = gridServices(services, gridOrder, 'media')
+    const mediaGrid = gridServices(services, gridOrder, ['media'])
     expect(filterServicesByTileQuery(mediaGrid, 'son').map((service) => service.name)).toEqual([
       'Sonarr',
     ])

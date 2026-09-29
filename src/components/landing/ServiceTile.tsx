@@ -45,7 +45,7 @@ export function ServiceTile({
   service,
   compact,
   zone,
-  activeTag,
+  activeTags,
   editMode,
   pinned,
   isDragging,
@@ -63,7 +63,7 @@ export function ServiceTile({
   service: DisplayService
   compact?: boolean
   zone: 'grid' | 'pinned'
-  activeTag: string | null
+  activeTags: readonly string[]
   editMode?: boolean
   pinned?: boolean
   isDragging?: boolean
@@ -189,7 +189,7 @@ export function ServiceTile({
             <button
               key={tag}
               type="button"
-              className={`rounded-full px-1.5 py-px text-[9px] ${tagClass(tag, activeTag === tag)}`}
+              className={`rounded-full px-1.5 py-px text-[9px] ${tagClass(tag, activeTags.includes(tag))}`}
               onClick={(event) => {
                 event.preventDefault()
                 event.stopPropagation()

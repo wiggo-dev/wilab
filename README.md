@@ -38,11 +38,30 @@ docker compose up -d --build
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `WILAB_DATA_DIR` | `/data` | Directory for `config.json` (set automatically in Compose) |
+| `WILAB_ACCESS_TOKEN` | _(unset)_ | Optional shared secret; when set, browser and API require auth |
 | `PORT` | `3000` | HTTP port inside the container |
+
+### Access control (optional)
+
+By default wilab has **no authentication** — keep it LAN-only or protect it at a reverse proxy.
+
+To enable a shared-secret gate, set `WILAB_ACCESS_TOKEN` in Compose (or the container env). Unauthenticated browsers are redirected to a sign-in page that sets an httpOnly cookie; API clients may send `Authorization: Bearer <token>` instead. `GET /api/health` stays open for probes.
+
+```yaml
+environment:
+  WILAB_DATA_DIR: /data
+  WILAB_ACCESS_TOKEN: "replace-me"
+```
+
+This complements proxy auth for simpler setups; it is not multi-user OAuth.
+
+### Progressive Web App
+
+wilab ships a web app manifest and a service worker that caches **static shell assets** only (icons, JS/CSS, catalog logos). Live glances (`/api/live`) and config always need the network. Install from the browser “Add to Home Screen” / install prompt when serving at the **site root**. Subpath reverse-proxy installs are not supported in v2.
 
 ### Reverse proxy
 
-Run wilab on your LAN and put nginx, Caddy, or Traefik in front for TLS. wilab has no built-in authentication in v1 — keep it LAN-only or protect it at the proxy.
+Run wilab on your LAN and put nginx, Caddy, or Traefik in front for TLS. Prefer proxy auth for internet exposure; or set `WILAB_ACCESS_TOKEN` for a lightweight shared secret.
 
 ## Container image (GHCR)
 

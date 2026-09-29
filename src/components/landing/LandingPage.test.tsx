@@ -46,6 +46,48 @@ describe('LandingPage', () => {
     expect(screen.queryByText('Router')).toBeNull()
   })
 
+  it('multi-selects tags with OR matching by default', () => {
+    render(<LandingPage config={config} catalog={catalog} />)
+
+    const header = screen.getByRole('banner')
+    fireEvent.click(within(header).getByRole('button', { name: 'media' }))
+    fireEvent.click(within(header).getByRole('button', { name: 'infra' }))
+
+    expect(within(header).getByText('2 selected')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Sonarr/i })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Router/i })).toBeTruthy()
+    expect(screen.getAllByText('Home Assistant')).toHaveLength(1)
+  })
+
+  it('AND mode keeps only services that have every selected tag', () => {
+    const multiConfig = resolveConfigForDisplay({
+      ...FIXTURE_CONFIG,
+      services: [
+        ...FIXTURE_CONFIG.services,
+        {
+          id: 'svc-both',
+          catalogId: null,
+          name: 'Media NAS',
+          url: 'http://nas.lab.lan',
+          logo: '',
+          tags: ['media', 'infra'],
+          integration: null,
+        },
+      ],
+      gridOrder: [...FIXTURE_CONFIG.gridOrder, 'svc-both'],
+    })
+    render(<LandingPage config={multiConfig} catalog={catalog} />)
+
+    const header = screen.getByRole('banner')
+    fireEvent.click(within(header).getByRole('button', { name: 'media' }))
+    fireEvent.click(within(header).getByRole('button', { name: 'infra' }))
+    fireEvent.click(within(header).getByRole('button', { name: 'All tags' }))
+
+    expect(screen.getByRole('link', { name: /Media NAS/i })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Sonarr/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /^Router$/i })).toBeNull()
+  })
+
   it('submits search to the active provider template', () => {
     vi.stubGlobal('open', openSpy)
 
@@ -225,7 +267,7 @@ describe('LandingPage', () => {
   })
 
   it('exports the current config as a downloadable JSON file', () => {
-    const createObjectURL = vi.fn(() => 'blob:wilab-config')
+    const createObjectURL = vi.fn((_blob: Blob) => 'blob:wilab-config')
     const revokeObjectURL = vi.fn()
     vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL })
 
@@ -236,7 +278,7 @@ describe('LandingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Export config' }))
 
     expect(createObjectURL).toHaveBeenCalled()
-    const blob = createObjectURL.mock.calls[0]?.[0] as Blob
+    const blob = createObjectURL.mock.calls[0]![0]
     expect(blob).toBeInstanceOf(Blob)
     expect(blob.type).toBe('application/json')
     expect(clickSpy).toHaveBeenCalled()
