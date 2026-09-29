@@ -6,7 +6,7 @@ import {
   isPublicPath,
 } from '@/lib/access/token'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const expectedToken = configuredAccessToken()
   if (expectedToken == null) {
     return NextResponse.next()
@@ -17,9 +17,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const authorized = isAuthorized({
+  const authorized = await isAuthorized({
     expectedToken,
-    cookieToken: request.cookies.get(ACCESS_COOKIE)?.value,
+    cookieValue: request.cookies.get(ACCESS_COOKIE)?.value,
     authorization: request.headers.get('authorization'),
   })
 

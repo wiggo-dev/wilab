@@ -57,7 +57,7 @@ This complements proxy auth for simpler setups; it is not multi-user OAuth.
 
 ### Progressive Web App
 
-wilab ships a web app manifest and a service worker that caches **static shell assets** only (icons, JS/CSS, catalog logos). Live glances (`/api/live`) and config always need the network. Install from the browser “Add to Home Screen” / install prompt when serving at the **site root**. Subpath reverse-proxy installs are not supported in v2.
+wilab ships a web app manifest and a service worker that caches **static assets** only (icons, hashed JS/CSS, catalog logos). It does **not** cache the HTML document, so an installed app still needs network to open — offline shows the browser’s offline page, not a wilab shell. Live glances (`/api/live`) and config always need the network. Install from the browser “Add to Home Screen” / install prompt when serving at the **site root**. Subpath reverse-proxy installs are not supported in v2.
 
 ### Reverse proxy
 

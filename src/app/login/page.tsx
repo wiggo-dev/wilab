@@ -2,6 +2,7 @@
 
 import { type FormEvent, Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { safeNextPath } from '@/lib/access/token'
 
 function LoginForm() {
   const router = useRouter()
@@ -25,8 +26,7 @@ function LoginForm() {
         setError(body?.error ?? 'Could not sign in')
         return
       }
-      const next = searchParams.get('next')
-      router.replace(next && next.startsWith('/') ? next : '/')
+      router.replace(safeNextPath(searchParams.get('next'), window.location.origin))
       router.refresh()
     } catch {
       setError('Could not sign in')
