@@ -11,6 +11,7 @@ const base: WilabConfig = {
       catalogId: null,
       name: 'A',
       url: 'http://a',
+      openUrl: null,
       logo: '',
       tags: [],
       integration: null,
@@ -20,6 +21,7 @@ const base: WilabConfig = {
       catalogId: null,
       name: 'B',
       url: 'http://b',
+      openUrl: null,
       logo: '',
       tags: [],
       integration: null,
@@ -98,5 +100,48 @@ describe('normalizeWilabConfig', () => {
     const normalized = normalizeWilabConfig(withoutPresets as WilabConfig)
 
     expect(normalized.hostPresets).toEqual([])
+  })
+
+  it('normalizes missing or blank openUrl to null', () => {
+    const normalized = normalizeWilabConfig({
+      ...base,
+      services: [
+        {
+          id: 'a',
+          catalogId: null,
+          name: 'A',
+          url: 'http://a',
+          logo: '',
+          tags: [],
+          integration: null,
+        } as unknown as WilabConfig['services'][number],
+        {
+          id: 'b',
+          catalogId: null,
+          name: 'B',
+          url: 'http://b',
+          openUrl: '  https://b.example  ',
+          logo: '',
+          tags: [],
+          integration: null,
+        },
+        {
+          id: 'c',
+          catalogId: null,
+          name: 'C',
+          url: 'http://c',
+          openUrl: '   ',
+          logo: '',
+          tags: [],
+          integration: null,
+        },
+      ],
+    })
+
+    expect(normalized.services.map((service) => service.openUrl)).toEqual([
+      null,
+      'https://b.example',
+      null,
+    ])
   })
 })

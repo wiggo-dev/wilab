@@ -80,6 +80,7 @@ describe('landing view-model', () => {
         catalogId: null,
         name: 'Media NAS',
         url: 'http://nas.lab.lan',
+        openUrl: null,
         logo: '',
         tags: ['media', 'infra'],
         integration: null,

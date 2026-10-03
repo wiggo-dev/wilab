@@ -23,6 +23,7 @@ export async function testIntegrationConnection(
     catalogId: null,
     name: 'Integration test',
     url,
+    openUrl: null,
     logo: '',
     tags: [],
     integration,

@@ -30,6 +30,19 @@ function normalizeSearchProviders(providers: SearchProvider[] | undefined): Sear
   return providers
 }
 
+function normalizeOpenUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed || null
+}
+
+function normalizeService(service: Service): Service {
+  return {
+    ...service,
+    openUrl: normalizeOpenUrl(service.openUrl),
+  }
+}
+
 /**
  * Structural coerce for persisted config: prune orphan order IDs, dedupe,
  * append missing grid services, and fix the active search provider.
@@ -37,7 +50,9 @@ function normalizeSearchProviders(providers: SearchProvider[] | undefined): Sear
  */
 export function normalizeWilabConfig(input: WilabConfig): WilabConfig {
   const schemaVersion = input.schemaVersion === SCHEMA_VERSION ? input.schemaVersion : SCHEMA_VERSION
-  const services: Service[] = Array.isArray(input.services) ? input.services : []
+  const services: Service[] = Array.isArray(input.services)
+    ? input.services.map((service) => normalizeService(service))
+    : []
   const knownIds = new Set(services.map((service) => service.id))
 
   const pinnedOrder = pruneOrder(input.pinnedOrder ?? [], knownIds)
