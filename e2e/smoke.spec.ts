@@ -73,6 +73,24 @@ test.describe('wilab smoke', () => {
     await expect(page.getByLabel('Health path (optional)')).toHaveValue('/health')
   })
 
+  test('sets an open URL that the tile link uses', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Edit' }).click()
+    await page.getByRole('button', { name: 'Edit Router' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Edit Router' })).toBeVisible()
+    await page.getByLabel('Open URL (optional)').fill('https://router.example.ts.net')
+    await page.getByRole('button', { name: 'Save' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Edit Router' })).toBeHidden()
+    await page.getByRole('button', { name: 'Done' }).click()
+
+    await expect(page.getByRole('link', { name: /Router/ })).toHaveAttribute(
+      'href',
+      'https://router.example.ts.net',
+    )
+  })
+
   test('exports and imports config from edit mode', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Edit' }).click()
@@ -96,6 +114,7 @@ test.describe('wilab smoke', () => {
           catalogId: null,
           name: 'Imported Only',
           url: 'http://imported.lab',
+          openUrl: null,
           logo: '',
           tags: [],
           integration: null,

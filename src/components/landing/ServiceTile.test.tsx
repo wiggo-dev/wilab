@@ -10,6 +10,7 @@ const service = {
   catalogId: null,
   name: 'Probe',
   url: 'http://probe.lab',
+  openUrl: null,
   logo: '',
   tags: [],
   integration: null,
@@ -66,5 +67,26 @@ describe('ServiceTile glance attention', () => {
     )
 
     expect(screen.getByText('2/2 up').getAttribute('data-attention')).toBe('ok')
+  })
+
+  it('links the tile to openUrl when set', () => {
+    render(
+      <ServiceTile
+        service={{ ...service, url: 'http://192.168.1.50:8989', openUrl: 'https://sonarr.ts.net' }}
+        zone="grid"
+        activeTags={[]}
+        onTagClick={() => {}}
+      />,
+    )
+
+    expect(screen.getByRole('link').getAttribute('href')).toBe('https://sonarr.ts.net')
+  })
+
+  it('links the tile to url when openUrl is unset', () => {
+    render(
+      <ServiceTile service={service} zone="grid" activeTags={[]} onTagClick={() => {}} />,
+    )
+
+    expect(screen.getByRole('link').getAttribute('href')).toBe('http://probe.lab')
   })
 })

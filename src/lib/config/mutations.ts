@@ -18,6 +18,7 @@ export function createServiceFromCatalog(entry: CatalogEntry, id: string): Servi
     catalogId: entry.id,
     name: entry.name,
     url: entry.defaultUrl,
+    openUrl: null,
     logo: entry.logo,
     tags: [],
     integration: entry.integration ? createIntegration(entry.integration) : null,
@@ -36,6 +37,7 @@ export function createCustomService(input: {
     catalogId: null,
     name: input.name,
     url: input.url,
+    openUrl: null,
     logo: input.logo,
     tags: input.tags,
     integration: null,
@@ -65,7 +67,7 @@ export function addServiceFromCatalog(
 export function updateService(
   config: WilabConfig,
   id: string,
-  patch: Partial<Pick<Service, 'name' | 'url' | 'logo' | 'tags' | 'integration'>>,
+  patch: Partial<Pick<Service, 'name' | 'url' | 'openUrl' | 'logo' | 'tags' | 'integration'>>,
 ): WilabConfig {
   return {
     ...config,

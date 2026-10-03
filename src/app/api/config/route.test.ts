@@ -55,6 +55,7 @@ describe('/api/config', () => {
           catalogId: null,
           name: 'Service A',
           url: 'http://a',
+          openUrl: null,
           logo: '',
           tags: [],
           integration: null,
@@ -107,6 +108,7 @@ describe('/api/config', () => {
     let next = addServiceFromCatalog(initial, sonarr!, 'svc-sonarr').config
     next = updateService(next, 'svc-sonarr', {
       url: 'http://sonarr.lab.lan:8989',
+      openUrl: null,
       tags: ['media'],
     })
     next = togglePin(next, 'svc-sonarr')

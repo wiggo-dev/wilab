@@ -5,8 +5,12 @@ A single-user homelab landing page: a grid of links to self-hosted services, wit
 ## Language
 
 **Service**:
-An entry on the landing page: a name, a URL it links out to, a logo, and optional tags. The core unit everything else attaches to.
+An entry on the landing page: a name, a URL (used for glances/health from the wilab server), an optional Open URL for the browser tile link, a logo, and optional tags. The core unit everything else attaches to.
 _Avoid_: App, bookmark, link, tile (tile is the visual rendering of a service, not the service itself)
+
+**Open URL**:
+Optional per-service browser href when remote clients cannot reach the service URL (LAN, `.local`, etc.). Glances and health checks always use the service URL from the server. When unset, the tile opens the service URL.
+_Avoid_: External URL, public URL, proxy URL
 
 **Catalog**:
 The bundled list of Catalog entries that ships inside the app so a known service can be added without typing details by hand. Works offline.

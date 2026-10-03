@@ -66,12 +66,14 @@ describe('config mutations', () => {
     const updated = updateService(FIXTURE_CONFIG, 'svc-ha', {
       name: 'HA',
       url: 'http://ha.local:8123',
+      openUrl: 'https://ha.ts.net',
       tags: ['home', 'automation'],
       logo: '/catalog/icons/home-assistant.svg',
     })
 
     expect(updated.services.find((service) => service.id === 'svc-ha')).toMatchObject({
       name: 'HA',
+      openUrl: 'https://ha.ts.net',
       tags: ['home', 'automation'],
     })
 

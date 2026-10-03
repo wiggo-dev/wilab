@@ -63,6 +63,18 @@ wilab ships a web app manifest and a service worker that caches **static assets*
 
 Run wilab on your LAN and put nginx, Caddy, or Traefik in front for TLS. Prefer proxy auth for internet exposure; or set `WILAB_ACCESS_TOKEN` for a lightweight shared secret.
 
+### Remote access (Tailscale, VPN, reverse proxy)
+
+wilab itself can be reached from off-LAN, but **service tiles are different**:
+
+| Concern | Who must reach the service host |
+|---------|----------------------------------|
+| **Glances / health** | The **wilab server** (server-side `/api/live`). Use a URL the container/host can resolve — prefer LAN DNS or Tailscale MagicDNS over `localhost` inside Docker. |
+| **Tile links** | The **browser**. A `192.168.x.x` or `.local` URL works on LAN but not from a phone on cellular. |
+| **Logos** | The **browser** for absolute logo URLs. Catalog icons are served by wilab and work remotely; custom favicons pointing at LAN hosts may fail (cosmetic). |
+
+For mixed LAN + remote use, keep the service **URL** as the address wilab uses for glances, and set an optional **Open URL** (edit the service) to a remotely routable link — e.g. Tailscale MagicDNS (`https://sonarr.tailnet.ts.net`) or a reverse-proxied hostname. wilab does not proxy service UIs.
+
 ## Container image (GHCR)
 
 Images are published **only on GitHub Releases** (semver tags like `v1.0.0`), not on every `main` commit:

@@ -25,13 +25,14 @@ export function ServiceForm({
   service: DisplayService
   hostPresets?: string[]
   onSave: (
-    patch: Pick<DisplayService, 'name' | 'url' | 'logo' | 'tags' | 'integration'>,
+    patch: Pick<DisplayService, 'name' | 'url' | 'openUrl' | 'logo' | 'tags' | 'integration'>,
   ) => void | Promise<void>
   onRemove: () => void | Promise<void>
   removeLabel?: string
 }) {
   const [name, setName] = useState(service.name)
   const [url, setUrl] = useState(service.url)
+  const [openUrl, setOpenUrl] = useState(service.openUrl ?? '')
   const [logo, setLogo] = useState(service.logo)
   const [tags, setTags] = useState(service.tags.join(', '))
   const [apiKey, setApiKey] = useState(
@@ -73,6 +74,7 @@ export function ServiceForm({
     await onSave({
       name,
       url,
+      openUrl: openUrl.trim() || null,
       logo,
       tags: parseTagsInput(tags),
       integration: buildIntegration(),
@@ -131,6 +133,10 @@ export function ServiceForm({
           required
         />
       </label>
+      <p className="text-xs text-white/50">
+        Used for glances and health checks from the wilab server. Prefer a hostname the server can
+        reach (not browser-only DNS).
+      </p>
       {catalogUrlUsesHostTemplate(url) && hostPresets.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
           <span>Use preset:</span>
@@ -146,6 +152,19 @@ export function ServiceForm({
           ))}
         </div>
       )}
+      <label className="text-sm">
+        Open URL (optional)
+        <input
+          className="mt-1 w-full rounded-lg bg-white/10 px-3 py-2"
+          value={openUrl}
+          onChange={(event) => setOpenUrl(event.target.value)}
+          placeholder="Leave blank to open the service URL"
+        />
+      </label>
+      <p className="text-xs text-white/50">
+        Browser link for the tile when you open wilab remotely (Tailscale, reverse proxy, VPN).
+        Glances still use the service URL above.
+      </p>
       <label className="text-sm">
         Logo URL
         <input

@@ -13,6 +13,8 @@ export type Service = {
   catalogId: string | null
   name: string
   url: string
+  /** Optional browser link when remote clients cannot reach `url` (LAN / .local). */
+  openUrl: string | null
   logo: string
   tags: string[]
   integration: null | ServiceIntegration

@@ -65,6 +65,7 @@ describe('useConfigSession', () => {
         catalogId: null,
         name: 'Imported',
         url: 'http://imported',
+        openUrl: null,
         logo: '',
         tags: [],
         integration: null,

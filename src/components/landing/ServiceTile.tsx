@@ -7,6 +7,7 @@ import {
   classifyGlanceAttention,
   type GlanceAttention,
 } from '@/lib/landing/glance-attention'
+import { serviceHref } from '@/lib/landing/service-href'
 import { tagClass } from '@/lib/ui/tag-colors'
 
 const ATTENTION_BADGE: Record<GlanceAttention, string> = {
@@ -179,7 +180,12 @@ export function ServiceTile({
           {tileContent}
         </button>
       ) : (
-        <a href={service.url} target="_blank" rel="noopener noreferrer" className={interactiveClassName}>
+        <a
+          href={serviceHref(service)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={interactiveClassName}
+        >
           {tileContent}
         </a>
       )}
